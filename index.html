@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://accounts.google.com; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Badfish Manager" />
+  <title>Badfish Manager</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/badfish-logo.png" alt="Badfish logo">
+        <div>
+          <strong>BADFISH</strong>
+          <span>BODY JEWELRY</span>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav-item active" data-view="dashboard"><span>◼</span> <b>Dashboard</b></button>
+        <button class="nav-item" data-view="jobs"><span>▤</span> <b>Commesse</b></button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> <b>Impostazioni</b></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="syncDot" class="status-dot"></div>
+        <div>
+          <strong id="syncTitle">Drive non collegato</strong>
+          <span id="syncSubtitle">Cache locale disponibile</span>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">GESTIONALE PRODUZIONE</p>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <button id="syncBtn" class="btn secondary">↻ Sincronizza</button>
+          <button id="connectDriveBtn" class="btn secondary">☁ Collega Drive</button>
+          <button id="newJobBtn" class="btn primary">+ Nuova commessa</button>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="view active">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">BADFISH WORKFLOW</p>
+            <h2>Ogni commessa, file e versione<br>nel posto giusto.</h2>
+            <p>Fusion 360, STEP, programmi NC, disegni e fotografie sincronizzati su Google Drive e disponibili da PC e telefono.</p>
+          </div>
+          <div class="hero-mark">BF</div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card"><span>Commesse totali</span><strong id="statTotal">0</strong></article>
+          <article class="stat-card"><span>In lavorazione</span><strong id="statWorking">0</strong></article>
+          <article class="stat-card"><span>Da programmare</span><strong id="statProgramming">0</strong></article>
+          <article class="stat-card"><span>Completate</span><strong id="statDone">0</strong></article>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">ATTIVITÀ RECENTE</p><h3>Ultime commesse</h3></div>
+            <button class="text-btn" data-go="jobs">Vedi tutte →</button>
+          </div>
+          <div id="recentJobs" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="jobsView" class="view">
+        <div class="panel toolbar-panel">
+          <div class="search-box"><span>⌕</span><input id="jobSearch" type="search" placeholder="Cerca codice, cliente, articolo o materiale..."></div>
+          <select id="statusFilter">
+            <option value="">Tutti gli stati</option>
+            <option>Da progettare</option><option>Progettazione</option><option>Da programmare</option>
+            <option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option>
+          </select>
+        </div>
+        <div id="jobsList" class="jobs-grid"></div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="settings-grid">
+          <article class="panel">
+            <p class="eyebrow">GOOGLE DRIVE</p>
+            <h3>Archivio cloud</h3>
+            <p class="muted">Le commesse vengono salvate nella cartella <strong>BADFISH_MANAGER</strong> del tuo Drive. Sul dispositivo resta una cache locale per poter consultare l'ultimo stato anche senza connessione.</p>
+            <div class="drive-card">
+              <div><span>Stato</span><strong id="driveStateText">Non collegato</strong></div>
+              <div><span>Cartella</span><strong id="driveFolderText">BADFISH_MANAGER</strong></div>
+              <div><span>Ultima sync</span><strong id="lastSyncText">—</strong></div>
+            </div>
+            <div class="settings-actions">
+              <button id="settingsConnectBtn" class="btn primary">Collega Google Drive</button>
+              <button id="disconnectDriveBtn" class="btn ghost">Disconnetti</button>
+            </div>
+          </article>
+
+          <article class="panel">
+            <p class="eyebrow">CONFIGURAZIONE</p>
+            <h3>Google OAuth</h3>
+            <label>Client ID Google
+              <input id="googleClientId" type="text" inputmode="text" placeholder="...apps.googleusercontent.com">
+            </label>
+            <p class="muted small">Puoi usare lo stesso Client ID web già configurato per Fabio & Sofia Travels Manager. Per GitHub Pages va autorizzata l'origine del tuo sito, ad esempio <code>https://fabioesofiatravels.github.io</code>.</p>
+            <button id="saveClientIdBtn" class="btn secondary">Salva Client ID su questo dispositivo</button>
+          </article>
+
+          <article class="panel">
+            <p class="eyebrow">AZIENDA</p>
+            <h3>Dati applicazione</h3>
+            <label>Nome azienda
+              <input id="companyName" type="text" value="Badfish Body Jewelry">
+            </label>
+            <button id="saveSettingsBtn" class="btn secondary">Salva impostazioni</button>
+          </article>
+
+          <article class="panel">
+            <p class="eyebrow">INSTALLAZIONE</p>
+            <h3>App sul telefono</h3>
+            <p class="muted">Su iPhone: apri il sito in Safari → Condividi → <strong>Aggiungi alla schermata Home</strong>. Su Android: Chrome → menu → <strong>Installa app</strong>.</p>
+            <button id="installPwaBtn" class="btn secondary hidden">Installa Badfish Manager</button>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div id="jobModal" class="modal">
+      <div class="modal-head">
+        <div><p class="eyebrow">NUOVA COMMESSA</p><h2>Crea il lavoro</h2></div>
+        <button class="icon-btn" id="closeModalBtn">×</button>
+      </div>
+      <form id="jobForm">
+        <div class="form-grid">
+          <label>Codice commessa*<input name="code" required placeholder="BF-2026-001"></label>
+          <label>Cliente*<input name="client" required placeholder="Nome cliente"></label>
+          <label class="full">Articolo*<input name="article" required placeholder="Es. Tunnel titanio 18 mm"></label>
+          <label>Materiale<input name="material" placeholder="Titanio, acciaio..."></label>
+          <label>Quantità<input name="quantity" type="number" min="0" value="1"></label>
+          <label>Data consegna<input name="dueDate" type="date"></label>
+          <label>Stato<select name="status"><option>Da progettare</option><option>Progettazione</option><option>Da programmare</option><option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option></select></label>
+          <label class="full">Note<textarea name="notes" rows="4" placeholder="Indicazioni, lavorazioni, tolleranze..."></textarea></label>
+        </div>
+        <div class="modal-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Annulla</button><button type="submit" class="btn primary">Crea commessa</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="detailBackdrop" class="modal-backdrop hidden">
+    <div id="detailModal" class="modal detail-modal"><div id="detailContent"></div></div>
+  </div>
+
+  <input id="hiddenFileInput" class="hidden" type="file" multiple>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="drive.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

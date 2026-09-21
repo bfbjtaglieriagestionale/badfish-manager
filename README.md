@@ -1,7 +1,6 @@
-# Badfish Manager v6.1
+# Badfish Manager v6.2
 
-Versione PWA con correzione completa della cache/service worker e JavaScript separato per evitare che GitHub Pages o il browser mischino file di versioni diverse.
+Correzione critica avvio: eliminata la Temporal Dead Zone di `now()` che bloccava l’intero JavaScript della v6.1.
 
-Carica **tutto il contenuto** di questa cartella nella root del repository `badfish-manager`, sostituendo i file esistenti.
-
-Dopo il deploy apri una volta: `https://bfbjtaglieriagestionale.github.io/badfish-manager/?v=61`
+Carica tutti i file nella root del repository GitHub Pages sostituendo quelli esistenti.
+Apri poi una volta `?v=62`.

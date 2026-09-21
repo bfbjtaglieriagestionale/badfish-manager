@@ -1,7 +1,7 @@
 window.BADFISH_CONFIG = {
-  // Puoi incollare qui lo stesso Client ID OAuth "Applicazione web"
-  // usato per Fabio & Sofia Travels Manager. Il Client ID NON è un segreto.
-  // Esempio: "1234567890-abc.apps.googleusercontent.com"
-  googleClientId: "",
-  driveRootFolder: "BADFISH_MANAGER"
+  // OAuth 2.0 Client ID dedicato a Badfish Manager.
+  // Il Client ID di una web app non è un segreto e può stare nel codice client.
+  googleClientId: "385314112149-8apstc3kae7pdjasdqud481s829jj9fc.apps.googleusercontent.com",
+  driveRootFolder: "BADFISH_MANAGER",
+  appUrl: "https://bfbjtaglieriagestionale.github.io/badfish-manager/"
 };

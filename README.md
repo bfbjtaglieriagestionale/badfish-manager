@@ -28,35 +28,33 @@ Se viene caricato un file Fusion con lo stesso nome di uno già presente, la ver
 
 ## 1. Google Cloud
 
-Puoi riutilizzare lo stesso progetto / Client ID web già usato per Fabio & Sofia Travels Manager.
+Questa build è già configurata con il Client ID OAuth dedicato a Badfish Manager.
 
-1. Apri Google Cloud Console.
-2. Verifica che **Google Drive API** sia abilitata.
-3. In **Google Auth Platform / OAuth client**, usa un client di tipo **Web application**.
-4. In **Authorized JavaScript origins** aggiungi l'origine GitHub Pages, ad esempio:
-   `https://fabioesofiatravels.github.io`
-   (solo protocollo + dominio, senza `/badfish-manager`).
-5. L'app richiede soltanto lo scope `https://www.googleapis.com/auth/drive.file`.
+Configurazione prevista:
 
-Il Client ID non è un segreto. Puoi:
-- incollarlo nell'app da **Impostazioni**, oppure
-- inserirlo in `config.js` prima della pubblicazione.
+- Google Drive API abilitata nel progetto Google Cloud dedicato.
+- Client OAuth di tipo **Web application**.
+- Authorized JavaScript origin: `https://bfbjtaglieriagestionale.github.io`
+- Scope: `https://www.googleapis.com/auth/drive.file`
+- Account Google Badfish aggiunto tra gli utenti di test finché l'app resta in modalità Testing.
+
+Il Client ID è contenuto in `config.js`. Non è un client secret.
 
 ## 2. GitHub Pages
 
-Crea un repository, ad esempio `badfish-manager`, e carica **il contenuto di questa cartella** nella root del repository.
+Repository: `badfish-manager`. Carica **il contenuto di questa cartella** nella root del repository.
 
 Poi: **Settings → Pages → Deploy from a branch → main / root**.
 
-L'indirizzo sarà simile a:
-`https://fabioesofiatravels.github.io/badfish-manager/`
+URL configurato:
+`https://bfbjtaglieriagestionale.github.io/badfish-manager/`
 
 ## 3. Primo avvio
 
 1. Apri il sito.
 2. Vai in **Impostazioni**.
-3. Inserisci il Client ID Google se non è già in `config.js`.
-4. Premi **Collega Google Drive**.
+3. Premi **Collega Google Drive**.
+4. Accedi con l'account Google dedicato a Badfish.
 5. Accetta l'accesso richiesto.
 
 L'app crea automaticamente `BADFISH_MANAGER` nel tuo Drive.

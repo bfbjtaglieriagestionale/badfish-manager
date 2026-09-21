@@ -200,7 +200,7 @@
     if (!dbFile) {
       dbFile = await multipartUpload({
         name: 'badfish_data.json',
-        blob: new Blob([JSON.stringify({ settings: { companyName: 'Badfish Body Jewelry', schemaVersion: 3 }, jobs: [], deletedJobs: [], meta: { updatedAt: new Date().toISOString() } }, null, 2)], { type: 'application/json' }),
+        blob: new Blob([JSON.stringify({ settings: { companyName: 'Badfish Body Jewelry', schemaVersion: 6 }, jobs: [], deletedJobs: [], meta: { updatedAt: new Date().toISOString() } }, null, 2)], { type: 'application/json' }),
         mimeType: 'application/json',
         parentId: root.id
       });

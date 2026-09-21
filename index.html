@@ -1,211 +1,261 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://accounts.google.com; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self';">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0d10" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Badfish Manager" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071014">
+  <meta name="color-scheme" content="dark">
+  <meta name="application-name" content="Badfish Manager">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Badfish">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Gestionale commesse Badfish Body Jewelry con Google Drive">
   <title>Badfish Manager</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=5" />
-  <link rel="icon" href="./assets/icon-192.png?v=5" />
-  <link rel="apple-touch-icon" href="./assets/icon-192.png?v=5" />
-  <link rel="stylesheet" href="./styles.css?v=5" />
-  <script src="./config.js?v=5"></script>
+  <link rel="manifest" href="./manifest.webmanifest?v=6">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=6">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png?v=6">
+  <link rel="stylesheet" href="./styles.css?v=6">
+  <script src="./config.js?v=6"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div id="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <img src="./assets/badfish-logo.png?v=5" alt="Badfish logo" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden')"><div class="brand-fallback hidden">BF</div>
-        <div>
-          <strong>BADFISH</strong>
-          <span>BODY JEWELRY</span>
-        </div>
-      </div>
+  <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.1a1.1 1.1 0 0 1-1.1 1.1h-5.3v-6H9.4v6H4.1A1.1 1.1 0 0 1 3 19.9z"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24"><path d="M8 7V5.8A1.8 1.8 0 0 1 9.8 4h4.4A1.8 1.8 0 0 1 16 5.8V7M4 7h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 19H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 7Zm-1.5 5.1c5.4 2.4 13.6 2.4 19 0M10 13.5h4"/></symbol>
+    <symbol id="i-files" viewBox="0 0 24 24"><path d="M8 3h7l4 4v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M3 7v11a2 2 0 0 0 2 2h1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19 13.2 1.5 1.2-1.8 3-1.8-.7a7 7 0 0 1-2 1.2l-.3 2h-3.4l-.3-2a7 7 0 0 1-2-1.2l-1.8.7-1.8-3L7 13.2a7 7 0 0 1 0-2.4L5.5 9.6l1.8-3 1.8.7a7 7 0 0 1 2-1.2l.3-2h3.4l.3 2a7 7 0 0 1 2 1.2l1.8-.7 1.8 3-1.5 1.2a7 7 0 0 1 0 2.4Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.5 18H18a4 4 0 0 0 .7-7.9A6.5 6.5 0 0 0 6.3 8.4 4.8 4.8 0 0 0 7.5 18Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M18.1 9A7 7 0 0 0 6 6.6L4 9m2 6a7 7 0 0 0 12 2.4L20 15"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h10v9.7A1.8 1.8 0 0 1 19.2 20H4.8A1.8 1.8 0 0 1 3 18.2Z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M4 19.5h16"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="m3 3 18 18M5 9.7a12 12 0 0 1 3.3-1.8M12 7.5a12 12 0 0 1 7 2.2M8 13a6 6 0 0 1 3.5-1.4M14.8 12.3A6 6 0 0 1 16 13m-6 3a3 3 0 0 1 4 0M12 20h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6"/></symbol>
+    <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  </svg>
 
-      <nav>
-        <button class="nav-item active" data-view="dashboard"><span>◼</span> <b>Dashboard</b></button>
-        <button class="nav-item" data-view="jobs"><span>▤</span> <b>Commesse</b></button>
-        <button class="nav-item" data-view="settings"><span>⚙</span> <b>Impostazioni</b></button>
+  <div id="appShell" class="app-shell">
+    <aside class="sidebar" aria-label="Navigazione principale">
+      <button class="brand" data-view="dashboard" aria-label="Badfish Manager - Dashboard">
+        <img src="./assets/icon-192.png?v=6" alt="">
+        <div><strong>BADFISH</strong><span>MANAGER</span></div>
+      </button>
+
+      <nav class="desktop-nav">
+        <button class="nav-item active" data-view="dashboard"><svg><use href="#i-home"/></svg><span>Dashboard</span></button>
+        <button class="nav-item" data-view="jobs"><svg><use href="#i-briefcase"/></svg><span>Commesse</span><b id="navJobsCount" class="nav-count">0</b></button>
+        <button class="nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>Archivio file</span></button>
+        <button class="nav-item" data-view="settings"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
       </nav>
 
-      <div class="sidebar-footer">
-        <div id="syncDot" class="status-dot"></div>
-        <div>
-          <strong id="syncTitle">Drive non collegato</strong>
-          <span id="syncSubtitle">Cache locale disponibile</span>
-        </div>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-drive">
+        <div class="drive-state-row"><span id="syncDot" class="status-dot"></span><strong id="syncTitle">Drive non collegato</strong></div>
+        <span id="syncSubtitle">Cache locale disponibile</span>
+        <button id="sidebarSyncBtn" class="mini-action"><svg><use href="#i-refresh"/></svg> Sincronizza</button>
       </div>
+      <div class="sidebar-version">Badfish Manager <b>v6</b></div>
     </aside>
 
-    <main>
+    <main class="main-shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">GESTIONALE PRODUZIONE</p>
+        <img class="mobile-top-icon" src="./assets/icon-192.png?v=6" alt="">
+        <div class="topbar-copy">
+          <span class="page-kicker" id="pageKicker">PANORAMICA</span>
           <h1 id="pageTitle">Dashboard</h1>
         </div>
         <div class="top-actions">
-          <button id="syncBtn" class="btn secondary">↻ Sincronizza</button>
-          <button id="connectDriveBtn" class="btn secondary">☁ Collega Drive</button>
-          <button id="newJobBtn" class="btn primary">+ Nuova commessa</button>
+          <button id="syncBtn" class="icon-action" title="Sincronizza"><svg><use href="#i-refresh"/></svg></button>
+          <button id="connectDriveBtn" class="drive-chip"><span class="status-dot"></span><span class="drive-chip-text">Drive</span></button>
+          <button id="newJobBtn" class="btn primary desktop-create"><svg><use href="#i-plus"/></svg> Nuova commessa</button>
+          <button class="account-button" data-view="settings" title="Impostazioni account"><span id="accountInitial">B</span></button>
         </div>
       </header>
 
-      <section id="dashboardView" class="view active">
-        <div class="hero">
-          <div>
-            <p class="eyebrow">BADFISH WORKFLOW</p>
-            <h2>Ogni commessa, file e versione<br>nel posto giusto.</h2>
-            <p>Fusion 360, STEP, programmi NC, disegni e fotografie sincronizzati su Google Drive e disponibili da PC e telefono.</p>
+      <div class="content-shell">
+        <section id="dashboardView" class="view active">
+          <article class="welcome-card">
+            <div class="welcome-copy">
+              <span class="eyebrow">BADFISH WORKFLOW</span>
+              <h2>Produzione sotto controllo.<br><em>Ovunque ti trovi.</em></h2>
+              <p>Commesse, progetti Fusion 360, STEP, programmi NC, disegni e foto in un unico archivio sincronizzato con Google Drive.</p>
+              <div class="welcome-actions">
+                <button class="btn primary" data-create-job><svg><use href="#i-plus"/></svg> Crea commessa</button>
+                <button class="btn subtle" data-view="jobs"><svg><use href="#i-search"/></svg> Cerca una commessa</button>
+              </div>
+            </div>
+            <div class="welcome-visual" aria-hidden="true">
+              <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+              <img src="./assets/badfish-logo.png?v=6" alt="">
+            </div>
+          </article>
+
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon"><svg><use href="#i-briefcase"/></svg></div><div><span>Commesse</span><strong id="statTotal">0</strong><small>totali</small></div></article>
+            <article class="stat-card"><div class="stat-icon working"><svg><use href="#i-clock"/></svg></div><div><span>In lavorazione</span><strong id="statWorking">0</strong><small>attive</small></div></article>
+            <article class="stat-card"><div class="stat-icon program"><svg><use href="#i-files"/></svg></div><div><span>Da programmare</span><strong id="statProgramming">0</strong><small>da preparare</small></div></article>
+            <article class="stat-card"><div class="stat-icon done"><svg><use href="#i-check"/></svg></div><div><span>Completate</span><strong id="statDone">0</strong><small>chiuse</small></div></article>
           </div>
-          <div class="hero-mark">BF</div>
-        </div>
 
-        <div class="stats-grid">
-          <article class="stat-card"><span>Commesse totali</span><strong id="statTotal">0</strong></article>
-          <article class="stat-card"><span>In lavorazione</span><strong id="statWorking">0</strong></article>
-          <article class="stat-card"><span>Da programmare</span><strong id="statProgramming">0</strong></article>
-          <article class="stat-card"><span>Completate</span><strong id="statDone">0</strong></article>
-        </div>
+          <div class="dashboard-grid">
+            <article class="panel recent-panel">
+              <div class="panel-head">
+                <div><span class="eyebrow">ULTIME MODIFICHE</span><h3>Commesse recenti</h3></div>
+                <button class="text-btn" data-view="jobs">Vedi tutte <svg><use href="#i-chevron"/></svg></button>
+              </div>
+              <div id="recentJobs" class="recent-list"></div>
+            </article>
 
-        <div class="panel">
-          <div class="panel-head">
-            <div><p class="eyebrow">ATTIVITÀ RECENTE</p><h3>Ultime commesse</h3></div>
-            <button class="text-btn" data-go="jobs">Vedi tutte →</button>
+            <aside class="dashboard-side">
+              <article id="driveOverview" class="panel drive-overview">
+                <div class="panel-head compact"><div><span class="eyebrow">GOOGLE DRIVE</span><h3>Sincronizzazione</h3></div><div id="driveOverviewDot" class="status-dot"></div></div>
+                <div class="drive-overview-body">
+                  <strong id="driveOverviewTitle">Non collegato</strong>
+                  <span id="driveOverviewEmail">Configura l'account Badfish</span>
+                </div>
+                <button id="dashboardDriveAction" class="btn subtle wide"><svg><use href="#i-cloud"/></svg> Collega Drive</button>
+              </article>
+
+              <article class="panel quick-panel">
+                <span class="eyebrow">ACCESSO RAPIDO</span><h3>Azioni</h3>
+                <button class="quick-row" data-create-job><span class="quick-icon"><svg><use href="#i-plus"/></svg></span><span><b>Nuova commessa</b><small>Crea cartella e scheda lavoro</small></span><svg class="row-chevron"><use href="#i-chevron"/></svg></button>
+                <button class="quick-row" data-view="files"><span class="quick-icon"><svg><use href="#i-files"/></svg></span><span><b>Archivio file</b><small>Trova rapidamente un file</small></span><svg class="row-chevron"><use href="#i-chevron"/></svg></button>
+              </article>
+            </aside>
           </div>
-          <div id="recentJobs" class="table-wrap"></div>
-        </div>
-      </section>
+        </section>
 
-      <section id="jobsView" class="view">
-        <div class="panel toolbar-panel">
-          <div class="search-box"><span>⌕</span><input id="jobSearch" type="search" placeholder="Cerca codice, cliente, articolo o materiale..."></div>
-          <select id="statusFilter">
-            <option value="">Tutti gli stati</option>
-            <option>Da progettare</option><option>Progettazione</option><option>Da programmare</option>
-            <option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option>
-          </select>
-        </div>
-        <div id="jobsList" class="jobs-grid"></div>
-      </section>
+        <section id="jobsView" class="view">
+          <div class="view-intro"><div><span class="eyebrow">PRODUZIONE</span><h2>Tutte le commesse</h2><p>Ricerca e apri ogni lavoro, anche da telefono.</p></div><button class="btn primary desktop-only" data-create-job><svg><use href="#i-plus"/></svg> Nuova commessa</button></div>
+          <div class="filter-bar">
+            <label class="search-field"><svg><use href="#i-search"/></svg><input id="jobSearch" type="search" placeholder="Cerca codice, cliente, articolo..." autocomplete="off"></label>
+            <select id="statusFilter" aria-label="Filtra per stato"><option value="">Tutti gli stati</option><option>Da progettare</option><option>Progettazione</option><option>Da programmare</option><option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option></select>
+          </div>
+          <div id="jobsList" class="jobs-grid"></div>
+        </section>
 
-      <section id="settingsView" class="view">
-        <div class="settings-grid">
-          <article class="panel">
-            <p class="eyebrow">GOOGLE DRIVE</p>
-            <h3>Archivio cloud</h3>
-            <p class="muted">Le commesse vengono salvate nella cartella <strong>BADFISH_MANAGER</strong> del tuo Drive. Sul dispositivo resta una cache locale per poter consultare l'ultimo stato anche senza connessione.</p>
-            <div class="drive-card">
-              <div><span>Stato</span><strong id="driveStateText">Non collegato</strong></div>
-              <div><span>Account Google</span><strong id="driveAccountText">—</strong></div>
-              <div><span>Cartella</span><strong id="driveFolderText">BADFISH_MANAGER</strong></div>
-              <div><span>Ultima sync</span><strong id="lastSyncText">—</strong></div>
-            </div>
-            <div class="settings-actions">
-              <button id="settingsConnectBtn" class="btn primary">Accedi a Google Drive</button>
-              <button id="changeGoogleEmailBtn" class="btn secondary">Cambia email</button>
-              <button id="disconnectDriveBtn" class="btn ghost">Disconnetti Drive</button>
-            </div>
-          </article>
+        <section id="filesView" class="view">
+          <div class="view-intro"><div><span class="eyebrow">ARCHIVIO</span><h2>File di produzione</h2><p>Tutti i file registrati nelle commesse, organizzati per tipo.</p></div></div>
+          <div class="file-stats" id="fileStats"></div>
+          <div class="filter-bar">
+            <label class="search-field"><svg><use href="#i-search"/></svg><input id="fileSearch" type="search" placeholder="Cerca file o commessa..." autocomplete="off"></label>
+            <select id="fileCategoryFilter" aria-label="Filtra file per categoria"><option value="">Tutti i file</option><option value="fusion">Fusion 360</option><option value="step">STEP</option><option value="nc">NC</option><option value="drawings">Disegni / PDF</option><option value="photos">Foto</option></select>
+          </div>
+          <article class="panel files-panel"><div id="allFilesList" class="all-files-list"></div></article>
+        </section>
 
-          <article class="panel">
-            <p class="eyebrow">CONFIGURAZIONE</p>
-            <h3>Account e OAuth</h3>
-            <label>Email Google usata da Badfish
-              <input id="preferredGoogleEmail" type="email" autocomplete="email" placeholder="badfish@gmail.com">
-            </label>
-            <div class="settings-actions account-settings-actions">
-              <button id="savePreferredGoogleEmailBtn" class="btn secondary">Salva account</button>
-              <button id="forgetGoogleEmailBtn" class="btn ghost">Dimentica account</button>
-            </div>
-            <p class="muted small">Account memorizzato: <strong id="savedGoogleEmailText">—</strong>. L’indirizzo viene salvato anche nella configurazione del gestionale.</p>
-            <label>Client ID Google
-              <input id="googleClientId" type="text" inputmode="text" placeholder="...apps.googleusercontent.com">
-            </label>
-            <p class="muted small">Client ID OAuth dedicato a Badfish Manager. In Google Cloud deve essere autorizzata l'origine <code>https://bfbjtaglieriagestionale.github.io</code>.</p>
-            <button id="saveClientIdBtn" class="btn secondary">Salva Client ID su questo dispositivo</button>
-          </article>
+        <section id="settingsView" class="view">
+          <div class="view-intro"><div><span class="eyebrow">PREFERENZE</span><h2>Impostazioni</h2><p>Account Google, installazione e configurazione dell'app.</p></div></div>
+          <div class="settings-grid">
+            <article class="panel settings-card featured-settings">
+              <div class="settings-icon"><svg><use href="#i-cloud"/></svg></div>
+              <div class="settings-copy"><span class="eyebrow">GOOGLE DRIVE</span><h3>Archivio cloud</h3><p>Database e file delle commesse vengono sincronizzati nella cartella <b>BADFISH_MANAGER</b>.</p></div>
+              <div class="drive-card">
+                <div><span>Stato</span><strong id="driveStateText">Non collegato</strong></div>
+                <div><span>Account</span><strong id="driveAccountText">—</strong></div>
+                <div><span>Cartella</span><strong id="driveFolderText">BADFISH_MANAGER</strong></div>
+                <div><span>Ultima sync</span><strong id="lastSyncText">—</strong></div>
+              </div>
+              <div class="settings-actions"><button id="settingsConnectBtn" class="btn primary"><svg><use href="#i-cloud"/></svg> Collega Drive</button><button id="disconnectDriveBtn" class="btn subtle">Disconnetti</button></div>
+            </article>
 
-          <article class="panel">
-            <p class="eyebrow">AZIENDA</p>
-            <h3>Dati applicazione</h3>
-            <label>Nome azienda
-              <input id="companyName" type="text" value="Badfish Body Jewelry">
-            </label>
-            <button id="saveSettingsBtn" class="btn secondary">Salva impostazioni</button>
-          </article>
+            <article class="panel settings-card">
+              <div class="settings-icon"><svg><use href="#i-user"/></svg></div>
+              <div class="settings-copy"><span class="eyebrow">ACCOUNT</span><h3>Email Google</h3><p>L'email viene ricordata su questo dispositivo e salvata nella configurazione Badfish.</p></div>
+              <label class="field-label">Email dedicata<input id="preferredGoogleEmail" type="email" autocomplete="email" placeholder="badfish@gmail.com"></label>
+              <div class="settings-actions"><button id="savePreferredGoogleEmailBtn" class="btn secondary">Salva email</button><button id="forgetGoogleEmailBtn" class="btn subtle">Dimentica</button></div>
+              <small class="settings-note">Memorizzato: <strong id="savedGoogleEmailText">—</strong></small>
+            </article>
 
-          <article class="panel">
-            <p class="eyebrow">INSTALLAZIONE</p>
-            <h3>App sul telefono</h3>
-            <p class="muted">Su iPhone: apri il sito in Safari → Condividi → <strong>Aggiungi alla schermata Home</strong>. Su Android: Chrome → menu → <strong>Installa app</strong>.</p>
-            <button id="installPwaBtn" class="btn secondary hidden">Installa Badfish Manager</button>
-          </article>
-        </div>
-      </section>
+            <article class="panel settings-card">
+              <div class="settings-icon"><svg><use href="#i-install"/></svg></div>
+              <div class="settings-copy"><span class="eyebrow">WEB APP</span><h3>Installa Badfish</h3><p>Aggiungila alla schermata Home per aprirla a tutto schermo come un'app.</p></div>
+              <div class="install-hints"><div><b>iPhone</b><span>Safari → Condividi → Aggiungi alla schermata Home</span></div><div><b>Android / PC</b><span>Usa “Installa app” dal browser</span></div></div>
+              <button id="installPwaBtn" class="btn secondary hidden"><svg><use href="#i-install"/></svg> Installa Badfish Manager</button>
+            </article>
+
+            <article class="panel settings-card technical-settings">
+              <div class="settings-icon"><svg><use href="#i-settings"/></svg></div>
+              <div class="settings-copy"><span class="eyebrow">AVANZATE</span><h3>Configurazione tecnica</h3><p>Non serve modificarla durante l'uso normale.</p></div>
+              <details>
+                <summary>Mostra impostazioni OAuth</summary>
+                <label class="field-label">Client ID Google<input id="googleClientId" type="text" inputmode="text"></label>
+                <button id="saveClientIdBtn" class="btn subtle">Salva Client ID</button>
+              </details>
+              <label class="field-label">Nome azienda<input id="companyName" type="text" value="Badfish Body Jewelry"></label>
+              <button id="saveSettingsBtn" class="btn subtle">Salva dati app</button>
+            </article>
+          </div>
+        </section>
+      </div>
     </main>
+
+    <nav class="mobile-nav" aria-label="Navigazione mobile">
+      <button class="mobile-nav-item active" data-view="dashboard"><svg><use href="#i-home"/></svg><span>Home</span></button>
+      <button class="mobile-nav-item" data-view="jobs"><svg><use href="#i-briefcase"/></svg><span>Commesse</span></button>
+      <button class="mobile-create" data-create-job aria-label="Nuova commessa"><svg><use href="#i-plus"/></svg></button>
+      <button class="mobile-nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>File</span></button>
+      <button class="mobile-nav-item" data-view="settings"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
+    </nav>
   </div>
 
-  <div id="accountSetupBackdrop" class="modal-backdrop hidden account-setup-backdrop">
-    <div class="modal account-setup-modal">
-      <div class="account-setup-logo">
-        <img src="./assets/badfish-logo.png?v=5" alt="Badfish logo">
-      </div>
-      <p class="eyebrow">BADFISH MANAGER</p>
-      <h2 id="accountSetupTitle">Configura Google Drive</h2>
-      <p id="accountSetupText" class="muted">Inserisci una volta l’email Google dedicata a Badfish. Verrà ricordata e usata automaticamente per Drive.</p>
+  <!-- Primo avvio -->
+  <div id="accountSetupBackdrop" class="onboarding-backdrop hidden">
+    <div class="onboarding-card">
+      <div class="onboarding-mark"><img src="./assets/icon-192.png?v=6" alt="Badfish"></div>
+      <span class="eyebrow">BENVENUTO IN</span>
+      <h2>Badfish Manager</h2>
+      <p id="accountSetupText">Inserisci l'account Google dedicato alla web app. Lo salvi una volta e Badfish lo userà come account preferito per Drive.</p>
       <form id="googleEmailForm">
-        <label>Email Google
-          <input id="googleAccountEmail" type="email" autocomplete="email" required placeholder="badfish@gmail.com">
-        </label>
-        <label class="remember-row">
-          <input id="rememberGoogleEmail" type="checkbox" checked>
-          <span>Salva questo account e non chiedermelo più su questo dispositivo</span>
-        </label>
-        <p class="muted small">Badfish userà questa email come account preferito per Google Drive e controllerà che l’account collegato corrisponda.</p>
-        <div class="modal-actions account-setup-actions">
-          <button type="button" id="skipGoogleEmailBtn" class="btn ghost">Usa solo offline</button>
-          <button type="submit" class="btn primary">Salva e collega</button>
-        </div>
+        <label class="field-label onboarding-field">Email Google<input id="googleAccountEmail" type="email" inputmode="email" autocomplete="email" required placeholder="nome@gmail.com"></label>
+        <label class="remember-row"><input id="rememberGoogleEmail" type="checkbox" checked><span>Ricorda questo account su questo dispositivo</span></label>
+        <div class="onboarding-info"><svg><use href="#i-cloud"/></svg><span>L'email viene salvata nella configurazione. Google può comunque chiedere occasionalmente di confermare l'accesso per motivi di sicurezza.</span></div>
+        <button type="submit" class="btn primary wide large">Salva e collega Drive</button>
+        <button type="button" id="skipGoogleEmailBtn" class="btn ghost wide">Continua offline</button>
       </form>
     </div>
   </div>
 
+  <!-- Nuova commessa -->
   <div id="modalBackdrop" class="modal-backdrop hidden">
-    <div id="jobModal" class="modal">
-      <div class="modal-head">
-        <div><p class="eyebrow">NUOVA COMMESSA</p><h2>Crea il lavoro</h2></div>
-        <button class="icon-btn" id="closeModalBtn">×</button>
-      </div>
+    <div id="jobModal" class="modal job-modal">
+      <div class="modal-head"><div><span class="eyebrow">NUOVO LAVORO</span><h2>Crea commessa</h2></div><button class="icon-btn" id="closeModalBtn" aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
       <form id="jobForm">
         <div class="form-grid">
-          <label>Codice commessa*<input name="code" required placeholder="BF-2026-001"></label>
-          <label>Cliente*<input name="client" required placeholder="Nome cliente"></label>
-          <label class="full">Articolo*<input name="article" required placeholder="Es. Tunnel titanio 18 mm"></label>
-          <label>Materiale<input name="material" placeholder="Titanio, acciaio..."></label>
-          <label>Quantità<input name="quantity" type="number" min="0" value="1"></label>
-          <label>Data consegna<input name="dueDate" type="date"></label>
-          <label>Stato<select name="status"><option>Da progettare</option><option>Progettazione</option><option>Da programmare</option><option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option></select></label>
-          <label class="full">Note<textarea name="notes" rows="4" placeholder="Indicazioni, lavorazioni, tolleranze..."></textarea></label>
+          <label class="field-label">Codice commessa*<input name="code" required placeholder="BF-2026-001"></label>
+          <label class="field-label">Cliente*<input name="client" required placeholder="Nome cliente"></label>
+          <label class="field-label full">Articolo*<input name="article" required placeholder="Es. Tunnel titanio 18 mm"></label>
+          <label class="field-label">Materiale<input name="material" placeholder="Titanio, acciaio..."></label>
+          <label class="field-label">Quantità<input name="quantity" type="number" min="0" value="1"></label>
+          <label class="field-label">Data consegna<input name="dueDate" type="date"></label>
+          <label class="field-label">Stato<select name="status"><option>Da progettare</option><option>Progettazione</option><option>Da programmare</option><option>In lavorazione</option><option>Controllo qualità</option><option>Completata</option><option>Consegnata</option></select></label>
+          <label class="field-label full">Note<textarea name="notes" rows="4" placeholder="Indicazioni, lavorazioni, tolleranze..."></textarea></label>
         </div>
-        <div class="modal-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Annulla</button><button type="submit" class="btn primary">Crea commessa</button></div>
+        <div class="modal-actions"><button type="button" class="btn subtle" id="cancelModalBtn">Annulla</button><button type="submit" class="btn primary">Crea commessa</button></div>
       </form>
     </div>
   </div>
 
-  <div id="detailBackdrop" class="modal-backdrop hidden">
-    <div id="detailModal" class="modal detail-modal"><div id="detailContent"></div></div>
-  </div>
+  <!-- Dettaglio commessa -->
+  <div id="detailBackdrop" class="modal-backdrop detail-backdrop hidden"><div id="detailModal" class="detail-drawer"><div id="detailContent"></div></div></div>
 
   <input id="hiddenFileInput" class="hidden" type="file" multiple>
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
 
-  <script src="./drive.js?v=5"></script>
-  <script src="./app.js?v=5"></script>
+  <script src="./drive.js?v=6"></script>
+  <script src="./app.js?v=6"></script>
 </body>
 </html>

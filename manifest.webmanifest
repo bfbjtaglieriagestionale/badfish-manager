@@ -1,14 +1,23 @@
 {
+  "id": "./",
   "name": "Badfish Manager",
   "short_name": "Badfish",
-  "description": "Gestionale commesse Badfish Body Jewelry con Google Drive",
-  "start_url": "./",
+  "description": "Gestionale commesse e file di produzione Badfish Body Jewelry",
+  "lang": "it-IT",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0d10",
-  "theme_color": "#0a0d10",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#071014",
+  "theme_color": "#071014",
+  "categories": ["business", "productivity"],
   "icons": [
     {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
     {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Commesse","short_name":"Commesse","url":"./?view=jobs","icons":[{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"}]},
+    {"name":"Archivio file","short_name":"File","url":"./?view=files","icons":[{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"}]}
   ]
 }

@@ -76,7 +76,9 @@ function setSyncState(type, title, subtitle='') {
   $('#driveStateText').textContent = title;
   const connected = BadfishDrive.isConnected();
   $('#connectDriveBtn').textContent = connected ? '☁ Drive collegato' : '☁ Collega Drive';
-  $('#settingsConnectBtn').textContent = connected ? 'Ricollega Google Drive' : 'Collega Google Drive';
+  $('#settingsConnectBtn').textContent = connected ? 'Cambia account Google' : 'Collega Google Drive';
+  const user = BadfishDrive.getCurrentUser?.();
+  if ($('#driveAccountText')) $('#driveAccountText').textContent = user?.emailAddress || '—';
 }
 
 function switchView(view) {
@@ -138,7 +140,8 @@ async function ensureConnected() {
 async function connectDrive() {
   try {
     setSyncState('syncing','Connessione a Drive…','Autorizzazione Google');
-    await BadfishDrive.connect();
+    const connection = await BadfishDrive.connect({ selectAccount: true });
+    if ($('#driveAccountText')) $('#driveAccountText').textContent = connection?.user?.emailAddress || '—';
     await syncDrive(true);
   } catch (err) {
     setSyncState('','Drive non collegato','Cache locale disponibile');
@@ -270,7 +273,7 @@ function initEvents() {
   $('#connectDriveBtn').addEventListener('click',()=>connectDrive().catch(()=>{}));
   $('#settingsConnectBtn').addEventListener('click',()=>connectDrive().catch(()=>{}));
   $('#syncBtn').addEventListener('click',async()=>{try{await ensureConnected();await syncDrive(true)}catch{}});
-  $('#disconnectDriveBtn').addEventListener('click',()=>{BadfishDrive.clearToken();driveRefs=null;setSyncState('','Drive non collegato','Cache locale disponibile');toast('Drive disconnesso da questa sessione.');});
+  $('#disconnectDriveBtn').addEventListener('click',()=>{BadfishDrive.clearToken();driveRefs=null;if($('#driveAccountText'))$('#driveAccountText').textContent='—';setSyncState('','Drive non collegato','Cache locale disponibile');toast('Drive disconnesso da questa sessione.');});
   $('#saveClientIdBtn').addEventListener('click',()=>{BadfishDrive.setClientId($('#googleClientId').value); BadfishDrive.clearToken(); driveRefs=null; setSyncState('','Drive non collegato','Client ID salvato'); toast('Client ID salvato su questo dispositivo.');});
   $('#saveSettingsBtn').addEventListener('click',async()=>{db.settings.companyName=$('#companyName').value.trim()||'Badfish Body Jewelry';await saveAndSync('Impostazioni salvate.');});
 
@@ -295,7 +298,7 @@ function initEvents() {
   window.addEventListener('online',()=>{ if(BadfishDrive.isConnected()) syncDrive(false).catch(()=>{}); });
 }
 
-if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=4',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
 
 render(); initEvents();
 setSyncState('','Drive non collegato',navigator.onLine?'Pronto per la connessione':'Modalità offline');

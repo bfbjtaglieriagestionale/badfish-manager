@@ -7,6 +7,7 @@
   let accessToken = '';
   let tokenClient = null;
   let tokenExpiresAt = 0;
+  let currentUser = null;
 
   const escQ = value => String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
@@ -21,6 +22,7 @@
   function clearToken() {
     accessToken = '';
     tokenExpiresAt = 0;
+    currentUser = null;
   }
 
   async function waitForGoogle() {
@@ -31,26 +33,55 @@
     throw new Error('Google Identity Services non disponibile. Controlla la connessione Internet.');
   }
 
-  async function connect() {
+  async function connect({ selectAccount = true } = {}) {
     const id = clientId();
     if (!id) throw new Error('Inserisci prima il Client ID Google nelle Impostazioni.');
     await waitForGoogle();
+
+    // Ogni connessione manuale mostra il selettore account Google.
+    // In questo modo il browser non riutilizza silenziosamente un account diverso
+    // da quello dedicato a Badfish.
+    clearToken();
 
     return new Promise((resolve, reject) => {
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: id,
         scope: SCOPE,
         include_granted_scopes: true,
-        callback: response => {
-          if (response?.error) return reject(new Error(response.error_description || response.error));
-          accessToken = response.access_token;
-          tokenExpiresAt = Date.now() + (Number(response.expires_in || 3600) * 1000);
-          resolve(response);
+        callback: async response => {
+          if (response?.error) {
+            const message = response.error === 'access_denied'
+              ? "Questo account Google non è autorizzato per Badfish Manager. Riprova e seleziona l'account Badfish corretto."
+              : (response.error_description || response.error);
+            return reject(new Error(message));
+          }
+          try {
+            accessToken = response.access_token;
+            tokenExpiresAt = Date.now() + (Number(response.expires_in || 3600) * 1000);
+            currentUser = await fetchCurrentUser();
+            resolve({ ...response, user: currentUser });
+          } catch (err) {
+            clearToken();
+            reject(err);
+          }
         },
-        error_callback: err => reject(new Error(err?.message || err?.type || 'Accesso Google annullato.'))
+        error_callback: err => {
+          const type = err?.type || '';
+          const message = type === 'popup_closed'
+            ? 'Selezione account annullata.'
+            : type === 'popup_failed_to_open'
+              ? 'Impossibile aprire la finestra Google. Consenti i popup per questo sito e riprova.'
+              : (err?.message || "Accesso Google annullato. Riprova e scegli l'account Badfish corretto.");
+          reject(new Error(message));
+        }
       });
-      tokenClient.requestAccessToken({ prompt: '' });
+      tokenClient.requestAccessToken({ prompt: selectAccount ? 'select_account' : '' });
     });
+  }
+
+  async function fetchCurrentUser() {
+    const result = await api('/about?fields=user(displayName,emailAddress,photoLink)');
+    return result?.user || null;
   }
 
   async function api(path, options = {}) {
@@ -126,8 +157,13 @@
   }
 
   async function downloadJson(fileId) {
-    const blob = await api(`/files/${encodeURIComponent(fileId)}?alt=media`);
-    return JSON.parse(await blob.text());
+    const payload = await api(`/files/${encodeURIComponent(fileId)}?alt=media`);
+    // Google Drive può restituire il JSON già deserializzato quando il
+    // Content-Type è application/json. In altri casi api() restituisce un Blob.
+    if (payload instanceof Blob) return JSON.parse(await payload.text());
+    if (typeof payload === 'string') return JSON.parse(payload);
+    if (payload && typeof payload === 'object') return payload;
+    throw new Error('Il database ricevuto da Google Drive non è un JSON valido.');
   }
 
   async function patchMetadata(fileId, metadata, addParents = '', removeParents = '') {
@@ -207,6 +243,7 @@
     updateMedia,
     deleteFile,
     getClientId: clientId,
+    getCurrentUser() { return currentUser ? { ...currentUser } : null; },
     setClientId(value) { localStorage.setItem('badfish_google_client_id', String(value || '').trim()); },
     driveFileUrl(fileId) { return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`; },
     folderUrl(folderId) { return `https://drive.google.com/drive/folders/${encodeURIComponent(folderId)}`; }

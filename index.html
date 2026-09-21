@@ -10,18 +10,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Badfish Manager" />
   <title>Badfish Manager</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="assets/icon-192.png" />
-  <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
-  <script src="config.js"></script>
+  <link rel="manifest" href="./manifest.webmanifest?v=4" />
+  <link rel="icon" href="./assets/icon-192.png?v=4" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png?v=4" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
+  <script src="./config.js?v=4"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div id="app">
     <aside class="sidebar">
       <div class="brand">
-        <img src="assets/badfish-logo.png" alt="Badfish logo">
+        <img src="./assets/badfish-logo.png?v=4" alt="Badfish logo">
         <div>
           <strong>BADFISH</strong>
           <span>BODY JEWELRY</span>
@@ -102,6 +102,7 @@
             <p class="muted">Le commesse vengono salvate nella cartella <strong>BADFISH_MANAGER</strong> del tuo Drive. Sul dispositivo resta una cache locale per poter consultare l'ultimo stato anche senza connessione.</p>
             <div class="drive-card">
               <div><span>Stato</span><strong id="driveStateText">Non collegato</strong></div>
+              <div><span>Account Google</span><strong id="driveAccountText">—</strong></div>
               <div><span>Cartella</span><strong id="driveFolderText">BADFISH_MANAGER</strong></div>
               <div><span>Ultima sync</span><strong id="lastSyncText">—</strong></div>
             </div>
@@ -170,7 +171,7 @@
   <input id="hiddenFileInput" class="hidden" type="file" multiple>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="drive.js"></script>
-  <script src="app.js"></script>
+  <script src="./drive.js?v=4"></script>
+  <script src="./app.js?v=4"></script>
 </body>
 </html>

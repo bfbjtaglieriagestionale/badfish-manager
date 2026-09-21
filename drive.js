@@ -33,14 +33,12 @@
     throw new Error('Google Identity Services non disponibile. Controlla la connessione Internet.');
   }
 
-  async function connect({ selectAccount = true } = {}) {
+  async function connect({ email = '', prompt = '' } = {}) {
     const id = clientId();
-    if (!id) throw new Error('Inserisci prima il Client ID Google nelle Impostazioni.');
+    if (!id) throw new Error('Client ID Google non configurato.');
     await waitForGoogle();
 
-    // Ogni connessione manuale mostra il selettore account Google.
-    // In questo modo il browser non riutilizza silenziosamente un account diverso
-    // da quello dedicato a Badfish.
+    const requestedEmail = String(email || '').trim().toLowerCase();
     clearToken();
 
     return new Promise((resolve, reject) => {
@@ -48,17 +46,29 @@
         client_id: id,
         scope: SCOPE,
         include_granted_scopes: true,
+        login_hint: requestedEmail || undefined,
+        prompt,
         callback: async response => {
           if (response?.error) {
-            const message = response.error === 'access_denied'
-              ? "Questo account Google non è autorizzato per Badfish Manager. Riprova e seleziona l'account Badfish corretto."
-              : (response.error_description || response.error);
+            const code = response.error;
+            const message = code === 'access_denied'
+              ? 'Accesso a Google Drive non autorizzato.'
+              : code === 'interaction_required' || code === 'login_required'
+                ? 'È necessario accedere a Google con l’account Badfish salvato.'
+                : (response.error_description || code);
             return reject(new Error(message));
           }
           try {
             accessToken = response.access_token;
             tokenExpiresAt = Date.now() + (Number(response.expires_in || 3600) * 1000);
             currentUser = await fetchCurrentUser();
+
+            const actualEmail = String(currentUser?.emailAddress || '').trim().toLowerCase();
+            if (requestedEmail && actualEmail && actualEmail !== requestedEmail) {
+              clearToken();
+              return reject(new Error(`Google ha collegato ${actualEmail}, ma Badfish è configurato per ${requestedEmail}. Esci dall’account errato oppure modifica l’email salvata nelle Impostazioni.`));
+            }
+
             resolve({ ...response, user: currentUser });
           } catch (err) {
             clearToken();
@@ -68,14 +78,15 @@
         error_callback: err => {
           const type = err?.type || '';
           const message = type === 'popup_closed'
-            ? 'Selezione account annullata.'
+            ? 'Accesso Google annullato.'
             : type === 'popup_failed_to_open'
-              ? 'Impossibile aprire la finestra Google. Consenti i popup per questo sito e riprova.'
-              : (err?.message || "Accesso Google annullato. Riprova e scegli l'account Badfish corretto.");
+              ? 'Il browser ha bloccato la finestra Google. Premi di nuovo “Accedi a Drive”.'
+              : (err?.message || 'Impossibile completare l’accesso Google.');
           reject(new Error(message));
         }
       });
-      tokenClient.requestAccessToken({ prompt: selectAccount ? 'select_account' : '' });
+
+      tokenClient.requestAccessToken({ prompt });
     });
   }
 

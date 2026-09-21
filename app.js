@@ -1,5 +1,6 @@
 const LOCAL_DB_KEY = 'badfish_manager_db_v3';
 const LAST_SYNC_KEY = 'badfish_manager_last_sync';
+const GOOGLE_EMAIL_KEY = 'badfish_google_email_v1';
 const ACCEPTS = {
   fusion: '.f3d,.f3z',
   step: '.stp,.step',
@@ -14,20 +15,22 @@ let driveRefs = null;
 let pendingUploadCategory = null;
 let deferredInstallPrompt = null;
 let syncing = false;
+let sessionGoogleEmail = '';
+let autoConnectAttempted = false;
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
 function now() { return new Date().toISOString(); }
 function defaultDb() {
-  return { settings: { companyName: 'Badfish Body Jewelry', schemaVersion: 3 }, jobs: [], deletedJobs: [], meta: { updatedAt: now() } };
+  return { settings: { companyName: 'Badfish Body Jewelry', schemaVersion: 4, googleAccountEmail: '', rememberGoogleAccount: true }, jobs: [], deletedJobs: [], meta: { updatedAt: now() } };
 }
 function normalizeDb(value) {
   const base = defaultDb();
   return {
     ...base,
     ...(value || {}),
-    settings: { ...base.settings, ...(value?.settings || {}), schemaVersion: 3 },
+    settings: { ...base.settings, ...(value?.settings || {}), schemaVersion: 4 },
     jobs: Array.isArray(value?.jobs) ? value.jobs.map(j => ({ ...j, files: Array.isArray(j.files) ? j.files : [] })) : [],
     deletedJobs: Array.isArray(value?.deletedJobs) ? value.deletedJobs : [],
     meta: { ...base.meta, ...(value?.meta || {}) }
@@ -69,16 +72,68 @@ function toast(message, error=false) { const el=$('#toast'); el.textContent=mess
 function statusClass(status) { if(['Completata','Consegnata'].includes(status)) return 'done'; if(['In lavorazione','Controllo qualità','Da programmare'].includes(status)) return 'working'; return ''; }
 function categoryLabel(cat) { return ({fusion:'FUSION 360',step:'STEP',nc:'PROGRAMMA NC',drawings:'DISEGNO / PDF',photos:'FOTO'})[cat] || cat; }
 
+function normalizeEmail(value='') { return String(value || '').trim().toLowerCase(); }
+function getPreferredGoogleEmail() {
+  return normalizeEmail(sessionGoogleEmail || localStorage.getItem(GOOGLE_EMAIL_KEY) || db.settings.googleAccountEmail || '');
+}
+function isGoogleEmailRemembered() { return Boolean(localStorage.getItem(GOOGLE_EMAIL_KEY)); }
+function setPreferredGoogleEmail(email, remember=true) {
+  const clean = normalizeEmail(email);
+  if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Inserisci un indirizzo email Google valido.');
+  sessionGoogleEmail = clean;
+  if (remember) {
+    localStorage.setItem(GOOGLE_EMAIL_KEY, clean);
+    db.settings.googleAccountEmail = clean;
+    db.settings.rememberGoogleAccount = true;
+  } else {
+    localStorage.removeItem(GOOGLE_EMAIL_KEY);
+    db.settings.googleAccountEmail = '';
+    db.settings.rememberGoogleAccount = false;
+  }
+  db.meta.updatedAt = now();
+  localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(db));
+  render();
+  return clean;
+}
+function clearPreferredGoogleEmail() {
+  sessionGoogleEmail = '';
+  localStorage.removeItem(GOOGLE_EMAIL_KEY);
+  db.settings.googleAccountEmail = '';
+  db.settings.rememberGoogleAccount = false;
+  db.meta.updatedAt = now();
+  localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(db));
+  BadfishDrive.clearToken();
+  driveRefs = null;
+  render();
+}
+function showGoogleEmailSetup(force=false) {
+  const current = getPreferredGoogleEmail();
+  const backdrop = $('#accountSetupBackdrop');
+  if (!backdrop) return;
+  $('#googleAccountEmail').value = current;
+  $('#rememberGoogleEmail').checked = force ? isGoogleEmailRemembered() || true : true;
+  $('#accountSetupTitle').textContent = current ? 'Account Google Badfish' : 'Configura Google Drive';
+  $('#accountSetupText').textContent = current
+    ? 'Modifica l’email che Badfish deve usare per Google Drive.'
+    : 'Inserisci una volta l’email Google dedicata a Badfish. Verrà ricordata e usata automaticamente per Drive.';
+  backdrop.classList.remove('hidden');
+  setTimeout(()=>$('#googleAccountEmail')?.focus(),80);
+}
+function hideGoogleEmailSetup() { $('#accountSetupBackdrop')?.classList.add('hidden'); }
+
 function setSyncState(type, title, subtitle='') {
   $('#syncTitle').textContent = title;
   $('#syncSubtitle').textContent = subtitle;
   $('#syncDot').className = `status-dot ${type || ''}`;
   $('#driveStateText').textContent = title;
   const connected = BadfishDrive.isConnected();
-  $('#connectDriveBtn').textContent = connected ? '☁ Drive collegato' : '☁ Collega Drive';
-  $('#settingsConnectBtn').textContent = connected ? 'Cambia account Google' : 'Collega Google Drive';
+  $('#connectDriveBtn').textContent = connected ? '☁ Drive collegato' : '☁ Accedi a Drive';
+  $('#settingsConnectBtn').textContent = connected ? 'Ricollega Drive' : 'Accedi a Google Drive';
   const user = BadfishDrive.getCurrentUser?.();
-  if ($('#driveAccountText')) $('#driveAccountText').textContent = user?.emailAddress || '—';
+  const preferred = getPreferredGoogleEmail();
+  if ($('#driveAccountText')) $('#driveAccountText').textContent = user?.emailAddress || preferred || '—';
+  if ($('#savedGoogleEmailText')) $('#savedGoogleEmailText').textContent = preferred || '—';
+  if ($('#preferredGoogleEmail')) $('#preferredGoogleEmail').value = preferred;
 }
 
 function switchView(view) {
@@ -94,6 +149,8 @@ function render() {
   $('#companyName').value = db.settings.companyName || 'Badfish Body Jewelry';
   $('#googleClientId').value = BadfishDrive.getClientId();
   $('#driveFolderText').textContent = window.BADFISH_CONFIG?.driveRootFolder || 'BADFISH_MANAGER';
+  if ($('#preferredGoogleEmail')) $('#preferredGoogleEmail').value = getPreferredGoogleEmail();
+  if ($('#savedGoogleEmailText')) $('#savedGoogleEmailText').textContent = getPreferredGoogleEmail() || '—';
   const last = localStorage.getItem(LAST_SYNC_KEY);
   $('#lastSyncText').textContent = last ? new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short'}).format(new Date(last)) : '—';
 
@@ -133,21 +190,55 @@ function openDetail(id) {
 
 async function ensureConnected() {
   if (BadfishDrive.isConnected()) return true;
-  await connectDrive();
+  const email = getPreferredGoogleEmail();
+  if (!email) {
+    showGoogleEmailSetup();
+    throw new Error('Configura prima l’email Google da usare per Badfish.');
+  }
+  await connectDrive({ email, silent: false });
   return BadfishDrive.isConnected();
 }
 
-async function connectDrive() {
-  try {
-    setSyncState('syncing','Connessione a Drive…','Autorizzazione Google');
-    const connection = await BadfishDrive.connect({ selectAccount: true });
-    if ($('#driveAccountText')) $('#driveAccountText').textContent = connection?.user?.emailAddress || '—';
-    await syncDrive(true);
-  } catch (err) {
-    setSyncState('','Drive non collegato','Cache locale disponibile');
-    toast(err.message,true);
-    throw err;
+async function connectDrive({ email = '', silent = false } = {}) {
+  const preferred = normalizeEmail(email || getPreferredGoogleEmail());
+  if (!preferred) {
+    showGoogleEmailSetup();
+    if (!silent) toast('Inserisci prima l’email Google dedicata a Badfish.', true);
+    return false;
   }
+  try {
+    setSyncState('syncing','Connessione a Drive…',preferred);
+    const connection = await BadfishDrive.connect({ email: preferred, prompt: '' });
+    const actual = normalizeEmail(connection?.user?.emailAddress || '');
+    if (actual && actual !== preferred) throw new Error(`Account Google errato: ${actual}. Badfish deve usare ${preferred}.`);
+
+    // L'email scelta fa parte della configurazione del gestionale e viene salvata
+    // anche nel database che viene sincronizzato su Drive.
+    if (isGoogleEmailRemembered()) {
+      db.settings.googleAccountEmail = preferred;
+      db.settings.rememberGoogleAccount = true;
+      db.meta.updatedAt = now();
+      localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(db));
+    }
+
+    if ($('#driveAccountText')) $('#driveAccountText').textContent = actual || preferred;
+    await syncDrive(!silent);
+    return true;
+  } catch (err) {
+    setSyncState('', 'Drive non collegato', `Account salvato: ${preferred}`);
+    if (!silent) toast(err.message, true);
+    return false;
+  }
+}
+
+async function autoConnectSavedAccount() {
+  if (autoConnectAttempted || !navigator.onLine) return;
+  const email = getPreferredGoogleEmail();
+  if (!email) return;
+  autoConnectAttempted = true;
+  // Tentativo automatico: se il browser richiede un gesto dell'utente non mostra
+  // errori invasivi; il pulsante “Accedi a Drive” userà comunque la stessa email.
+  await connectDrive({ email, silent: true });
 }
 
 async function syncDrive(showToast=false) {
@@ -159,6 +250,11 @@ async function syncDrive(showToast=false) {
     driveRefs = await BadfishDrive.ensureRootStructure();
     const remote = normalizeDb(await BadfishDrive.downloadJson(driveRefs.dbFile.id));
     db = mergeDb(db, remote);
+    const preferredEmail = getPreferredGoogleEmail();
+    if (preferredEmail && isGoogleEmailRemembered()) {
+      db.settings.googleAccountEmail = preferredEmail;
+      db.settings.rememberGoogleAccount = true;
+    }
 
     for (const job of db.jobs) {
       if (!job.driveFolderId) {
@@ -270,11 +366,38 @@ function initEvents() {
     db.jobs.unshift(job); closeNewJob(); await saveAndSync('Commessa creata.'); openDetail(job.id);
   });
 
-  $('#connectDriveBtn').addEventListener('click',()=>connectDrive().catch(()=>{}));
-  $('#settingsConnectBtn').addEventListener('click',()=>connectDrive().catch(()=>{}));
+  $('#connectDriveBtn').addEventListener('click',()=>connectDrive({ silent:false }));
+  $('#settingsConnectBtn').addEventListener('click',()=>connectDrive({ silent:false }));
   $('#syncBtn').addEventListener('click',async()=>{try{await ensureConnected();await syncDrive(true)}catch{}});
-  $('#disconnectDriveBtn').addEventListener('click',()=>{BadfishDrive.clearToken();driveRefs=null;if($('#driveAccountText'))$('#driveAccountText').textContent='—';setSyncState('','Drive non collegato','Cache locale disponibile');toast('Drive disconnesso da questa sessione.');});
+  $('#disconnectDriveBtn').addEventListener('click',()=>{BadfishDrive.clearToken();driveRefs=null;const email=getPreferredGoogleEmail();setSyncState('','Drive non collegato',email?`Account salvato: ${email}`:'Cache locale disponibile');toast('Drive disconnesso. L’email salvata resta memorizzata.');});
   $('#saveClientIdBtn').addEventListener('click',()=>{BadfishDrive.setClientId($('#googleClientId').value); BadfishDrive.clearToken(); driveRefs=null; setSyncState('','Drive non collegato','Client ID salvato'); toast('Client ID salvato su questo dispositivo.');});
+
+  $('#googleEmailForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    try {
+      const email=setPreferredGoogleEmail($('#googleAccountEmail').value,$('#rememberGoogleEmail').checked);
+      BadfishDrive.clearToken(); driveRefs=null;
+      hideGoogleEmailSetup();
+      toast($('#rememberGoogleEmail').checked ? `Account ${email} salvato.` : `Account ${email} usato solo per questa sessione.`);
+      await connectDrive({ email, silent:false });
+    } catch(err) { toast(err.message,true); }
+  });
+  $('#skipGoogleEmailBtn').addEventListener('click',()=>{hideGoogleEmailSetup();setSyncState('','Drive non collegato','Modalità locale');});
+  $('#changeGoogleEmailBtn').addEventListener('click',()=>showGoogleEmailSetup(true));
+  $('#forgetGoogleEmailBtn').addEventListener('click',()=>{
+    if(!confirm('Dimenticare l’account Google salvato su questo dispositivo?')) return;
+    clearPreferredGoogleEmail();
+    setSyncState('','Drive non collegato','Nessun account configurato');
+    showGoogleEmailSetup(true);
+  });
+  $('#savePreferredGoogleEmailBtn').addEventListener('click',async()=>{
+    try {
+      const email=setPreferredGoogleEmail($('#preferredGoogleEmail').value,true);
+      BadfishDrive.clearToken();driveRefs=null;
+      toast(`Account ${email} salvato.`);
+      await connectDrive({email,silent:false});
+    } catch(err){toast(err.message,true)}
+  });
   $('#saveSettingsBtn').addEventListener('click',async()=>{db.settings.companyName=$('#companyName').value.trim()||'Badfish Body Jewelry';await saveAndSync('Impostazioni salvate.');});
 
   document.addEventListener('click',async e=>{
@@ -298,7 +421,10 @@ function initEvents() {
   window.addEventListener('online',()=>{ if(BadfishDrive.isConnected()) syncDrive(false).catch(()=>{}); });
 }
 
-if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=4',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
+if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=5',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
 
 render(); initEvents();
-setSyncState('','Drive non collegato',navigator.onLine?'Pronto per la connessione':'Modalità offline');
+const startupEmail = getPreferredGoogleEmail();
+setSyncState('', 'Drive non collegato', startupEmail ? `Account salvato: ${startupEmail}` : (navigator.onLine ? 'Configura l’account Google' : 'Modalità offline'));
+if (!startupEmail) showGoogleEmailSetup();
+else window.addEventListener('load',()=>setTimeout(()=>autoConnectSavedAccount().catch(()=>{}),450));

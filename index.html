@@ -10,18 +10,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Badfish Manager" />
   <title>Badfish Manager</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=4" />
-  <link rel="icon" href="./assets/icon-192.png?v=4" />
-  <link rel="apple-touch-icon" href="./assets/icon-192.png?v=4" />
-  <link rel="stylesheet" href="./styles.css?v=4" />
-  <script src="./config.js?v=4"></script>
+  <link rel="manifest" href="./manifest.webmanifest?v=5" />
+  <link rel="icon" href="./assets/icon-192.png?v=5" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=5" />
+  <script src="./config.js?v=5"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div id="app">
     <aside class="sidebar">
       <div class="brand">
-        <img src="./assets/badfish-logo.png?v=4" alt="Badfish logo">
+        <img src="./assets/badfish-logo.png?v=5" alt="Badfish logo" onerror="this.style.display='none';this.nextElementSibling?.classList.remove('hidden')"><div class="brand-fallback hidden">BF</div>
         <div>
           <strong>BADFISH</strong>
           <span>BODY JEWELRY</span>
@@ -107,14 +107,23 @@
               <div><span>Ultima sync</span><strong id="lastSyncText">—</strong></div>
             </div>
             <div class="settings-actions">
-              <button id="settingsConnectBtn" class="btn primary">Collega Google Drive</button>
-              <button id="disconnectDriveBtn" class="btn ghost">Disconnetti</button>
+              <button id="settingsConnectBtn" class="btn primary">Accedi a Google Drive</button>
+              <button id="changeGoogleEmailBtn" class="btn secondary">Cambia email</button>
+              <button id="disconnectDriveBtn" class="btn ghost">Disconnetti Drive</button>
             </div>
           </article>
 
           <article class="panel">
             <p class="eyebrow">CONFIGURAZIONE</p>
-            <h3>Google OAuth</h3>
+            <h3>Account e OAuth</h3>
+            <label>Email Google usata da Badfish
+              <input id="preferredGoogleEmail" type="email" autocomplete="email" placeholder="badfish@gmail.com">
+            </label>
+            <div class="settings-actions account-settings-actions">
+              <button id="savePreferredGoogleEmailBtn" class="btn secondary">Salva account</button>
+              <button id="forgetGoogleEmailBtn" class="btn ghost">Dimentica account</button>
+            </div>
+            <p class="muted small">Account memorizzato: <strong id="savedGoogleEmailText">—</strong>. L’indirizzo viene salvato anche nella configurazione del gestionale.</p>
             <label>Client ID Google
               <input id="googleClientId" type="text" inputmode="text" placeholder="...apps.googleusercontent.com">
             </label>
@@ -140,6 +149,31 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="accountSetupBackdrop" class="modal-backdrop hidden account-setup-backdrop">
+    <div class="modal account-setup-modal">
+      <div class="account-setup-logo">
+        <img src="./assets/badfish-logo.png?v=5" alt="Badfish logo">
+      </div>
+      <p class="eyebrow">BADFISH MANAGER</p>
+      <h2 id="accountSetupTitle">Configura Google Drive</h2>
+      <p id="accountSetupText" class="muted">Inserisci una volta l’email Google dedicata a Badfish. Verrà ricordata e usata automaticamente per Drive.</p>
+      <form id="googleEmailForm">
+        <label>Email Google
+          <input id="googleAccountEmail" type="email" autocomplete="email" required placeholder="badfish@gmail.com">
+        </label>
+        <label class="remember-row">
+          <input id="rememberGoogleEmail" type="checkbox" checked>
+          <span>Salva questo account e non chiedermelo più su questo dispositivo</span>
+        </label>
+        <p class="muted small">Badfish userà questa email come account preferito per Google Drive e controllerà che l’account collegato corrisponda.</p>
+        <div class="modal-actions account-setup-actions">
+          <button type="button" id="skipGoogleEmailBtn" class="btn ghost">Usa solo offline</button>
+          <button type="submit" class="btn primary">Salva e collega</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="modalBackdrop" class="modal-backdrop hidden">
@@ -171,7 +205,7 @@
   <input id="hiddenFileInput" class="hidden" type="file" multiple>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="./drive.js?v=4"></script>
-  <script src="./app.js?v=4"></script>
+  <script src="./drive.js?v=5"></script>
+  <script src="./app.js?v=5"></script>
 </body>
 </html>

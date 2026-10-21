@@ -54,6 +54,49 @@ function bfWriteMeasuredDimensions(job,kind,dims,fileName){
   job.dimensionSources[kind]={fileName,method:'STEP / OpenCascade',measuredAt:now(),units:'mm',kind:'axis-aligned bounding box'};
 }
 
+
+// G-code geometric envelope estimator: not a measurement of the physical stock.
+function bfEstimateNC(source, allowance=2){
+  const a=Number(allowance); if(!Number.isFinite(a)||a<0||a>1000)throw Error('Margine non valido.');
+  const text=String(source).replace(/\([^)]*\)/g,'').replace(/;[^\n]*/g,'').toUpperCase();
+  let position={X:0,Y:0,Z:0}, modal=0,absolute=true,scale=1,started=false;
+  let low={X:Infinity,Y:Infinity,Z:Infinity},high={X:-Infinity,Y:-Infinity,Z:-Infinity};
+  let count=0, rapid=0, arc=0, unsupported=new Set(), units='mm', cuttingZ=[];
+  for(const originalLine of text.split(/\r?\n/)){
+    const line=originalLine.replace(/^\s*N\d+\s*/,'').replace(/\s+/g,'');if(!line||line==='%')continue;
+    const words=[...line.matchAll(/([A-Z])([+-]?(?:\d+\.?\d*|\.\d+)(?:E[+-]?\d+)?)/g)];
+    const codes=words.filter(w=>w[1]==='G').map(w=>Number(w[2]));
+    for(const c of codes){if(c===20){scale=25.4;units='inch → mm';}else if(c===21){scale=1;units='mm';}else if(c===90)absolute=true;else if(c===91)absolute=false;else if([0,1,2,3].includes(c))modal=c;else if([17,18,19,40,43,49,54,55,56,57,58,59,80,94].includes(c)){}else unsupported.add('G'+c);}
+    if(codes.some(c=>[28,30,53,92].includes(c))){unsupported.add('coordinate speciali (G28/G30/G53/G92)');continue;}
+    const changes={};for(const w of words){if('XYZ'.includes(w[1]))changes[w[1]]=Number(w[2])*scale;}
+    if(!Object.keys(changes).length)continue;
+    const next={...position};for(const axis of Object.keys(changes)){next[axis]=absolute?changes[axis]:position[axis]+changes[axis];}
+    if(modal===2||modal===3){arc++;unsupported.add('archi G2/G3: estremi non descrivono tutto l’arco');}
+    if(modal===0)rapid++;
+    if(modal===1||modal===2||modal===3){
+      for(const pt of [position,next])for(const axis of ['X','Y','Z']){low[axis]=Math.min(low[axis],pt[axis]);high[axis]=Math.max(high[axis],pt[axis]);}
+      if(!started){ // First cutting segment may originate at a safe machine location.
+        for(const axis of ['X','Y','Z']){low[axis]=next[axis];high[axis]=next[axis];}
+        started=true;
+      }
+      count++;cuttingZ.push(next.Z);
+    }
+    position=next;
+  }
+  if(count===0)throw Error('Nessuna traiettoria di taglio G1/G2/G3 trovata.');
+  const dx=high.X-low.X,dy=high.Y-low.Y;
+  if(!(dx>0&&dy>0))throw Error('Traiettoria insufficiente per stimare X e Y.');
+  const bounds={x:[low.X,high.X],y:[low.Y,high.Y],z:[low.Z,high.Z]};
+  // Z of stock cannot be established from NC alone; display depth of toolpath only.
+  return {x:Math.round((dx+2*a)*1000)/1000,y:Math.round((dy+2*a)*1000)/1000,zDepth:Math.round((high.Z-low.Z)*1000)/1000,bounds,allowance:a,lines:count,rapid,arc,units,warnings:[...unsupported], method:'NC toolpath X/Y + margin; Z depth only'};
+}
+function bfNCPanel(j){const r=j.ncEstimate;return `<section class="detail-section bf-nc-panel"><div class="bf-section-title"><h4>Stima grezzo dal programma NC</h4><span class="bf-tag">STIMA · NON MISURA</span></div><p class="bf-help">Legge i movimenti X/Y/Z del G-code. Calcola X e Y da traiettorie di taglio più un margine; la quota Z mostra solo l’escursione utensile. La dimensione reale del grezzo e il diametro fresa non sono ricavabili in modo affidabile dal solo NC.</p><div class="bf-nc-grid"><label class="field-label">Margine per lato (mm)<input id="bfNcMargin" type="number" min="0" max="1000" step="0.1" value="${esc(r?.allowance??2)}"></label><label class="field-label">Programma NC<input id="bfNcInput" type="file" accept=".nc,.tap,.cnc,.gcode,.txt"></label></div><button class="btn primary wide" id="bfAnalyzeNC">Analizza programma NC</button><div id="bfNcResult">${r?bfRenderNCResult(r):'<p class="bf-help">Seleziona il file NC usato sulla macchina per ottenere una stima.</p>'}</div></section>`;}
+function bfRenderNCResult(r){return `<div class="bf-nc-results"><div class="bf-nc-number"><small>X stimata</small><strong>${Number(r.x).toLocaleString('it-IT')} mm</strong></div><div class="bf-nc-number"><small>Y stimata</small><strong>${Number(r.y).toLocaleString('it-IT')} mm</strong></div><div class="bf-nc-number"><small>Escursione Z utensile</small><strong>${Number(r.zDepth).toLocaleString('it-IT')} mm</strong></div></div><p class="bf-help">${esc(r.fileName||'NC')} · ${r.lines} segmenti · margine ${r.allowance} mm/lato${r.units==='inch → mm'?' · pollici convertiti':''}</p>${r.warnings?.length?`<p class="bf-nc-warn">⚠️ Analisi parziale: ${esc(r.warnings.join(' · '))}. Controlla le misure in CAM.</p>`:''}<p class="bf-help"><b>Non sono inclusi:</b> raggio utensile, orientamento del grezzo, fissaggi, superfici da spianare e quote reali dello stock.</p>`;}
+function bfClockFormat(sec){sec=Math.max(0,Math.floor(sec||0));return `${String(Math.floor(sec/3600)).padStart(2,'0')}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;}
+function bfRunningSeconds(j){return j.timerStartedAt?Math.max(0,Math.floor((Date.now()-Date.parse(j.timerStartedAt))/1000))+Math.max(0,Number(j.timerAccumulatedSeconds)||0):Math.max(0,Number(j.timerAccumulatedSeconds)||0);}
+function bfSessionSeconds(j){return (j.workSessions||[]).reduce((n,s)=>n+(Number.isFinite(Number(s.seconds))?Number(s.seconds):Number(s.minutes||0)*60),0);}
+function bfTimerPanel(j){const running=!!j.timerStartedAt,paused=!running&&!!j.timerAccumulatedSeconds;const sessions=j.workSessions||[];return `<section class="detail-section bf-clock-panel"><div class="bf-section-title"><h4>Registro ore di lavoro</h4><span class="bf-tag">${running?'● IN CORSO':paused?'IN PAUSA':'PRONTO'}</span></div><p class="bf-help">Il cronometro usa l'ora reale: continua a conteggiare anche se chiudi la pagina. Salva ogni sessione nella commessa.</p><div class="bf-clock-display" id="bfTimerClock">${bfClockFormat(bfRunningSeconds(j))}</div><label class="field-label">Fase di lavoro<select id="bfPhase">${['Preparazione','Lavorazione CNC','Finitura','Altro'].map(x=>`<option ${x===(j.timerPhase||'Lavorazione CNC')?'selected':''}>${x}</option>`).join('')}</select></label><div class="bf-clock-actions">${running?'<button id="bfPauseTimer" class="btn secondary">Ⅱ Pausa</button><button id="bfStopTimer" class="btn primary">■ Termina e registra</button>':`<button id="bfStartTimer" class="btn primary">${paused?'▶ Riprendi':'▶ Avvia'}</button>${paused?'<button id="bfStopTimer" class="btn secondary">■ Termina e registra</button>':''}`}</div><div class="bf-manual"><label>Ore<input type="number" id="bfManualHours" min="0" max="100000" value="0"></label><label>Minuti<input type="number" id="bfManualMinutes" min="0" max="59" value="0"></label><button class="btn secondary" id="bfAddManual">+ Aggiungi tempo</button></div><div class="bf-totals"><span>Tempo registrato</span><strong>${bfClockFormat(bfSessionSeconds(j))}</strong></div><div class="bf-session-list">${sessions.length?sessions.slice().reverse().map(t=>`<div class="bf-session"><span><b>${esc(t.phase||'Lavorazione')}</b><small>${formatDateTime(t.endedAt||t.createdAt)} ${t.manual?'· manuale':''}</small></span><strong>${bfClockFormat(Number.isFinite(Number(t.seconds))?Number(t.seconds):Number(t.minutes||0)*60)}</strong><button class="bf-delete-session" data-bf-remove-session="${esc(t.id)}" title="Elimina sessione">×</button></div>`).join(''):'<p class="bf-help">Nessuna sessione registrata.</p>'}</div></section>`;}
+
 let db = loadLocal();
 let selectedJobId = null;
 let driveRefs = null;
@@ -166,16 +209,12 @@ function bfTime(minutes){const m=Math.max(0,Math.round(minutes||0));return `${Ma
 function bfElapsed(job){return job.timerStartedAt?Math.max(0,Math.floor((Date.now()-Date.parse(job.timerStartedAt))/60000)):0;}
 function bfDimFields(kind,dimensions){const labels=['Lunghezza','Larghezza','Spessore'];return `<div class="bf-dim-set"><b>${kind==='raw'?'Grezzo iniziale':'Pezzo finito'}</b><div class="bf-dims">${labels.map((name,i)=>`<label>${name}<input type="number" inputmode="decimal" min="0" max="100000" step="any" data-dimension="${kind}" data-axis="${i}" value="${esc(dimensions?.[i]??'')}" placeholder="mm"></label>`).join('')}</div></div>`;}
 function bfWorkPanel(j){
- const sessions=j.workSessions||[], raw=j.dimensions?.raw||[], finished=j.dimensions?.finished||[];
- const complete=[...raw,...finished].length===6 && [...raw,...finished].every(n=>Number.isFinite(Number(n))&&Number(n)>0);
- const vRaw=complete?raw.reduce((a,b)=>a*Number(b),1):0,vFin=complete?finished.reduce((a,b)=>a*Number(b),1):0;
- const running=!!j.timerStartedAt, elapsed=bfElapsed(j);
- return `<section class="detail-section bf-tech-panel"><div class="bf-section-title"><h4>Dimensioni del materiale</h4><span>mm</span></div><p class="bf-help">Lettura automatica STEP (misure d’ingombro sugli assi X/Y/Z, in mm). Il grezzo va caricato come modello separato, oppure misurato manualmente.</p><div class="bf-step-tools"><label class="field-label">Questo file rappresenta<select id="bfStepRole"><option value="finished">Pezzo finito</option><option value="raw">Grezzo iniziale</option></select></label><button type="button" class="btn secondary" id="bfAnalyzeStep">Analizza file STEP dal dispositivo</button><span class="bf-step-status" id="bfStepStatus" aria-live="polite"></span><input type="file" id="bfStepMeasureInput" accept=".stp,.step" hidden></div>${bfDimFields('raw',raw)}${j.dimensionSources?.raw?`<small class="bf-step-source">Lettura STEP grezzo: ${esc(j.dimensionSources.raw.fileName)}</small>`:''}${bfDimFields('finished',finished)}${j.dimensionSources?.finished?`<small class="bf-step-source">Lettura STEP finito: ${esc(j.dimensionSources.finished.fileName)}</small>`:''}<div class="bf-comparison">${complete?`<b>Confronto ingombri: ${Math.max(0,(1-vFin/vRaw)*100).toFixed(1).replace('.',',')}% di riduzione</b><small>Volume contenitore grezzo: ${vRaw.toLocaleString('it-IT')} mm³ · pezzo: ${vFin.toLocaleString('it-IT')} mm³. Non è il materiale realmente asportato.</small>${vFin>vRaw?'<small class="bf-warning">Controlla le misure: il volume finale supera quello del grezzo.</small>':''}`:'<span>Compila entrambe le serie di misure per visualizzare il confronto.</span>'}</div><button class="btn secondary wide" id="bfSaveDimensions">Salva dimensioni</button></section>
- <section class="detail-section bf-tech-panel"><div class="bf-section-title"><h4>Ore di lavorazione</h4><strong>${bfTime(bfMinutes(j))}</strong></div><label class="field-label">Fase<select id="bfPhase"><option value="Preparazione">Preparazione</option><option value="Lavorazione CNC">Lavorazione CNC</option><option value="Finitura">Finitura</option><option value="Altro">Altro</option></select></label><div class="bf-timer" id="bfTimerClock">${bfTime(elapsed)}</div><div class="bf-button-row"><button class="btn ${running?'subtle':'primary'}" id="${running?'bfStopTimer':'bfStartTimer'}">${running?'Termina e registra':'Avvia cronometro'}</button></div>${running?'<p class="bf-help">Cronometro attivo. Il tempo di avvio è salvato nella commessa e continua anche se chiudi la pagina.</p>':''}<div class="bf-manual"><label>Ore<input type="number" id="bfManualHours" min="0" max="100000" value="0"></label><label>Minuti<input type="number" id="bfManualMinutes" min="0" max="59" value="0"></label><button class="btn secondary" id="bfAddManual">+ Registra ore</button></div><div class="bf-session-list">${sessions.length?sessions.slice().reverse().map(t=>`<div class="bf-session"><span><b>${esc(t.phase||'Lavorazione')}</b><small>${formatDateTime(t.endedAt||t.createdAt)}</small></span><strong>${bfTime(t.minutes)}</strong></div>`).join(''):'<p class="bf-help">Nessuna sessione registrata.</p>'}</div></section>`;
+ const raw=j.dimensions?.raw||[], finished=j.dimensions?.finished||[];
+ return `<div class="bf-work-layout">${bfNCPanel(j)}<section class="detail-section bf-tech-panel"><div class="bf-section-title"><h4>Misure del grezzo e pezzo finito</h4><span class="bf-tag">mm</span></div><p class="bf-help">Puoi correggere le misure manualmente oppure ricavarle dal modello STEP. La stima NC riguarda solamente X/Y della traiettoria.</p>${bfDimFields('raw',raw)}${bfDimFields('finished',finished)}<div class="bf-step-tools"><label class="field-label">File STEP<select id="bfStepRole"><option value="finished">Pezzo finito</option><option value="raw">Grezzo</option></select></label><button class="btn secondary" id="bfAnalyzeStep">Leggi STEP</button><input type="file" id="bfStepMeasureInput" accept=".stp,.step" hidden><span id="bfStepStatus"></span></div><button class="btn secondary wide" id="bfSaveDimensions">Salva misure</button></section>${bfTimerPanel(j)}</div>`;
 }
 function openDetail(id){
   selectedJobId=id;const j=db.jobs.find(x=>x.id===id);if(!j)return;const files=j.files||[];
-  $('#detailContent').innerHTML=`<div class="detail-shell"><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material||'Materiale non specificato')}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon('x')}</button></div><div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity||0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length?files.map(f=>`<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join(''):`<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section"><h4>Lavorazione</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map(s=>`<option ${s===j.status?'selected':''}>${s}</option>`).join('')}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate||'')}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes||'')}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section>${bfWorkPanel(j)}<section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId?'La cartella cloud della commessa è collegata.':'La cartella verrà creata alla prima sincronizzazione o al primo upload.'}</div>${j.driveFolderId?`<button id="openDriveFolderBtn" class="btn subtle wide">${icon('external')} Apri cartella Drive</button>`:''}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon('trash')} Elimina dal gestionale</button></div></div></div>`;
+  $('#detailContent').innerHTML=`<div class="detail-shell"><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material||'Materiale non specificato')}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon('x')}</button></div><div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity||0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div>${bfWorkPanel(j)}<div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length?files.map(f=>`<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join(''):`<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section"><h4>Lavorazione</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map(s=>`<option ${s===j.status?'selected':''}>${s}</option>`).join('')}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate||'')}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes||'')}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId?'La cartella cloud della commessa è collegata.':'La cartella verrà creata alla prima sincronizzazione o al primo upload.'}</div>${j.driveFolderId?`<button id="openDriveFolderBtn" class="btn subtle wide">${icon('external')} Apri cartella Drive</button>`:''}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon('trash')} Elimina dal gestionale</button></div></div></div>`;
   const closeBtn=$('#closeDetail');
   if(closeBtn){
     closeBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDetail();},{once:true});
@@ -236,7 +275,7 @@ function initEvents(){
   $('#saveSettingsBtn').addEventListener('click',async()=>{db.settings.companyName=$('#companyName').value.trim()||'Badfish Body Jewelry';await saveAndSync('Impostazioni salvate.');});
   document.addEventListener('click',async e=>{if(e.target.closest('#closeDetail'))closeDetail();if(e.target.closest('#openDriveFolderBtn')){const job=db.jobs.find(j=>j.id===selectedJobId);if(job?.driveFolderId)window.open(BadfishDrive.folderUrl(job.driveFolderId),'_blank','noopener');}if(e.target.closest('#saveDetailBtn')){const job=db.jobs.find(j=>j.id===selectedJobId);if(!job)return;job.status=$('#detailStatus').value;job.dueDate=$('#detailDueDate').value;job.notes=$('#detailNotes').value;job.updatedAt=now();await saveAndSync('Commessa aggiornata.');openDetail(job.id);}if(e.target.closest('#deleteJobBtn')){const job=db.jobs.find(j=>j.id===selectedJobId);if(!job)return;if(!confirm(`Eliminare ${job.code} dal gestionale? I file su Drive non verranno cancellati.`))return;db.jobs=db.jobs.filter(j=>j.id!==job.id);db.deletedJobs.push({id:job.id,deletedAt:now()});closeDetail();await saveAndSync('Commessa rimossa dal gestionale.');}});
   document.addEventListener('click',async e=>{
-    const action=e.target.closest('#bfSaveDimensions,#bfStartTimer,#bfStopTimer,#bfAddManual');if(!action)return;
+    const action=e.target.closest('#bfSaveDimensions,#bfStartTimer,#bfPauseTimer,#bfStopTimer,#bfAddManual');if(!action)return;
     const j=db.jobs.find(x=>x.id===selectedJobId);if(!j)return;
     if(action.id==='bfSaveDimensions'){
       const dim={};for(const kind of ['raw','finished']){
@@ -249,21 +288,36 @@ function initEvents(){
       j.dimensions=dim;delete j.dimensionSources;
     }else if(action.id==='bfStartTimer'){
       if(j.timerStartedAt)return;j.timerStartedAt=now();j.timerPhase=$('#bfPhase').value;
+    }else if(action.id==='bfPauseTimer'){
+      if(!j.timerStartedAt)return;j.timerAccumulatedSeconds=bfRunningSeconds(j);delete j.timerStartedAt;
     }else if(action.id==='bfStopTimer'){
-      if(!j.timerStartedAt)return;
-      const start=Date.parse(j.timerStartedAt),end=now();
-      if(!Number.isFinite(start)){toast('Data del cronometro non valida.',true);return;}
-      const minutes=Math.max(1,Math.ceil((Date.parse(end)-start)/60000));
+      if(!j.timerStartedAt&&!j.timerAccumulatedSeconds)return;
+      const end=now(), seconds=bfRunningSeconds(j), minutes=seconds/60;
       j.workSessions=j.workSessions||[];
-      j.workSessions.push({id:`session_${Date.now()}`,phase:j.timerPhase||'Lavorazione CNC',minutes,startedAt:j.timerStartedAt,endedAt:end});
-      delete j.timerStartedAt;delete j.timerPhase;
+      j.workSessions.push({id:`session_${Date.now()}`,phase:j.timerPhase||'Lavorazione CNC',minutes,seconds,startedAt:j.timerStartedAt||null,endedAt:end});
+      delete j.timerStartedAt;delete j.timerPhase;delete j.timerAccumulatedSeconds;
     }else if(action.id==='bfAddManual'){
       const h=Number($('#bfManualHours').value),m=Number($('#bfManualMinutes').value);
       if(!Number.isInteger(h)||!Number.isInteger(m)||h<0||h>100000||m<0||m>59||h*60+m<=0){toast('Inserisci un tempo valido maggiore di zero.',true);return;}
       j.workSessions=j.workSessions||[];
-      j.workSessions.push({id:`session_${Date.now()}`,phase:$('#bfPhase').value,minutes:h*60+m,createdAt:now(),endedAt:now(),manual:true});
+      j.workSessions.push({id:`session_${Date.now()}`,phase:$('#bfPhase').value,minutes:h*60+m,seconds:(h*60+m)*60,createdAt:now(),endedAt:now(),manual:true});
     }
     j.updatedAt=now();await saveAndSync('Lavorazione aggiornata.');openDetail(j.id);
+  });
+  document.addEventListener('click',async e=>{
+    const btn=e.target.closest('#bfAnalyzeNC');if(!btn)return;
+    const input=$('#bfNcInput'),file=input?.files?.[0],margin=$('#bfNcMargin')?.value;
+    if(!file)return toast('Seleziona prima un programma NC.',true);
+    if(file.size>15*1024*1024)return toast('File NC troppo grande (max 15 MB).',true);
+    const job=db.jobs.find(j=>j.id===selectedJobId);if(!job)return;
+    try{const result=bfEstimateNC(await file.text(),margin);result.fileName=file.name;result.estimatedAt=now();job.ncEstimate=result;job.updatedAt=now();await saveAndSync('Stima NC salvata nella commessa.');openDetail(job.id);}
+    catch(err){toast(err.message,true);}
+  });
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest('[data-bf-remove-session]');if(!b)return;
+    const job=db.jobs.find(j=>j.id===selectedJobId);if(!job)return;
+    if(!confirm('Eliminare questa sessione di lavoro?'))return;
+    job.workSessions=(job.workSessions||[]).filter(s=>s.id!==b.dataset.bfRemoveSession);job.updatedAt=now();await saveAndSync('Sessione eliminata.');openDetail(job.id);
   });
   document.addEventListener('click',e=>{
     if(!e.target.closest('#bfAnalyzeStep'))return;
@@ -282,7 +336,7 @@ function initEvents(){
       if(selectedJobId===jobId)openDetail(jobId);
     }catch(error){if(status)status.textContent=error.message;toast(error.message,true);}
   });
-  window.setInterval(()=>{if(!selectedJobId)return;const j=db.jobs.find(x=>x.id===selectedJobId);const target=$('#bfTimerClock');if(target&&j?.timerStartedAt)target.textContent=bfTime(bfElapsed(j));},15000);
+  window.setInterval(()=>{if(!selectedJobId)return;const j=db.jobs.find(x=>x.id===selectedJobId);const target=$('#bfTimerClock');if(target&&j?.timerStartedAt)target.textContent=bfClockFormat(bfRunningSeconds(j));},1000);
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;$('#installPwaBtn').classList.remove('hidden');});$('#installPwaBtn').addEventListener('click',async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;$('#installPwaBtn').classList.add('hidden');});
   window.addEventListener('online',()=>{const email=getPreferredGoogleEmail();setSyncState(BadfishDrive.isConnected()?'ok':'',BadfishDrive.isConnected()?'Drive collegato':'Online',email||'Pronto');if(BadfishDrive.isConnected())syncDrive(false).catch(()=>{});});window.addEventListener('offline',()=>setSyncState('','Modalità offline','Dati locali disponibili'));
 }

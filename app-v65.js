@@ -113,11 +113,11 @@ function now(){ return new Date().toISOString(); }
 const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
 
 function defaultDb(){
-  return {settings:{companyName:'Badfish Body Jewelry',schemaVersion:6,googleAccountEmail:'',rememberGoogleAccount:true},jobs:[],deletedJobs:[],meta:{updatedAt:now()}};
+  return {settings:{companyName:'Badfish Body Jewelry',schemaVersion:6,googleAccountEmail:'',rememberGoogleAccount:true},jobs:[],deletedJobs:[],tasks:[],notes:[],meta:{updatedAt:now()}};
 }
 function normalizeDb(value){
   const base=defaultDb();
-  return {...base,...(value||{}),settings:{...base.settings,...(value?.settings||{}),schemaVersion:6},jobs:Array.isArray(value?.jobs)?value.jobs.map(j=>({...j,files:Array.isArray(j.files)?j.files:[]})):[],deletedJobs:Array.isArray(value?.deletedJobs)?value.deletedJobs:[],meta:{...base.meta,...(value?.meta||{})}};
+  return {...base,...(value||{}),settings:{...base.settings,...(value?.settings||{}),schemaVersion:6},jobs:Array.isArray(value?.jobs)?value.jobs.map(j=>({...j,files:Array.isArray(j.files)?j.files:[]})):[],deletedJobs:Array.isArray(value?.deletedJobs)?value.deletedJobs:[],tasks:Array.isArray(value?.tasks)?value.tasks:[],notes:Array.isArray(value?.notes)?value.notes:[],meta:{...base.meta,...(value?.meta||{})}};
 }
 function loadLocal(){try{return normalizeDb(JSON.parse(localStorage.getItem(LOCAL_DB_KEY)||'null'));}catch{return defaultDb();}}
 function persistLocal({renderNow=true}={}){db.meta.updatedAt=now();localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(db));if(renderNow)render();}
@@ -127,8 +127,10 @@ function mergeDb(a,b){
   const tomb=new Map();[...a.deletedJobs,...b.deletedJobs].forEach(x=>{const old=tomb.get(x.id);if(!old||dateMs(x.deletedAt)>dateMs(old.deletedAt))tomb.set(x.id,x);});
   const jobs=new Map();[...a.jobs,...b.jobs].forEach(j=>{const old=jobs.get(j.id);if(!old||dateMs(j.updatedAt)>dateMs(old.updatedAt))jobs.set(j.id,j);});
   for(const[id,del]of tomb){const job=jobs.get(id);if(!job||dateMs(del.deletedAt)>=dateMs(job.updatedAt))jobs.delete(id);}
+  const mergedItems=(aa,bb)=>{const out=new Map();[...(aa||[]),...(bb||[])].forEach(x=>{const prev=out.get(x.id);if(!prev||dateMs(x.updatedAt||x.createdAt)>=dateMs(prev.updatedAt||prev.createdAt))out.set(x.id,x);});return [...out.values()];};
+  const tasks=mergedItems(a.tasks,b.tasks),notes=mergedItems(a.notes,b.notes);
   const settings=dateMs(a.meta.updatedAt)>=dateMs(b.meta.updatedAt)?a.settings:b.settings;
-  return normalizeDb({settings,jobs:[...jobs.values()].sort((x,y)=>dateMs(y.updatedAt||y.createdAt)-dateMs(x.updatedAt||x.createdAt)),deletedJobs:[...tomb.values()],meta:{updatedAt:now()}});
+  return normalizeDb({settings,tasks,notes,jobs:[...jobs.values()].sort((x,y)=>dateMs(y.updatedAt||y.createdAt)-dateMs(x.updatedAt||x.createdAt)),deletedJobs:[...tomb.values()],meta:{updatedAt:now()}});
 }
 function esc(value=''){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function formatDate(value){if(!value)return '—';const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
@@ -168,9 +170,9 @@ function switchView(view){
   currentView=view;
   $$('.view').forEach(v=>v.classList.remove('active'));$$('[data-view]').forEach(v=>v.classList.remove('active'));
   $(`#${view}View`)?.classList.add('active');$$(`[data-view="${view}"]`).forEach(v=>v.classList.add('active'));
-  const titles={dashboard:['PANORAMICA','Dashboard'],jobs:['PRODUZIONE','Commesse'],files:['ARCHIVIO','File'],settings:['PREFERENZE','Impostazioni']};
+  const titles={dashboard:['PANORAMICA','Home'],jobs:['PRODUZIONE','Commesse'],files:['ARCHIVIO','File'],planner:['ORGANIZZAZIONE','Calendario e attività'],notes:['CONOSCENZE','Appunti'],settings:['PREFERENZE','Impostazioni']};
   $('#pageKicker').textContent=titles[view]?.[0]||'';$('#pageTitle').textContent=titles[view]?.[1]||'Badfish';
-  if(view==='files')renderFiles();if(view==='jobs')renderJobs();window.scrollTo({top:0,behavior:'smooth'});
+  if(view==='files')renderFiles();if(view==='jobs')renderJobs();if(view==='planner')bfRenderPlanner();if(view==='notes')bfRenderNotes();window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function render(){
@@ -178,7 +180,7 @@ function render(){
   const preferred=getPreferredGoogleEmail();$('#preferredGoogleEmail').value=preferred;$('#savedGoogleEmailText').textContent=preferred||'—';$('#accountInitial').textContent=accountInitial(BadfishDrive.getCurrentUser?.()?.emailAddress||preferred);
   const last=localStorage.getItem(LAST_SYNC_KEY);$('#lastSyncText').textContent=last?formatDateTime(last):'—';
   $('#statTotal').textContent=db.jobs.length;$('#statWorking').textContent=db.jobs.filter(j=>['In lavorazione','Controllo qualità'].includes(j.status)).length;$('#statProgramming').textContent=db.jobs.filter(j=>j.status==='Da programmare').length;$('#statDone').textContent=db.jobs.filter(j=>['Completata','Consegnata'].includes(j.status)).length;$('#navJobsCount').textContent=db.jobs.length;
-  renderRecent();renderJobs();renderFiles();
+  renderRecent();renderJobs();renderFiles();bfRenderSummary();bfRenderPlanner();bfRenderNotes();
 }
 
 function fileCategories(job){const set=new Set((job.files||[]).map(f=>f.category));return Object.keys(CATEGORY_LABELS).map(cat=>`<span class="file-pill ${set.has(cat)?'has':''}">${CATEGORY_SHORT[cat]}</span>`).join('');}
@@ -197,7 +199,7 @@ function renderFiles(){
   $('#fileStats').innerHTML=Object.entries(counts).map(([k,n])=>`<div class="file-stat"><span>${CATEGORY_LABELS[k]}</span><strong>${n}</strong></div>`).join('');
   const q=($('#fileSearch')?.value||'').toLowerCase().trim(),cat=$('#fileCategoryFilter')?.value||'';
   const filtered=files.filter(f=>(!cat||f.category===cat)&&(!q||[f.name,f.jobCode,f.jobArticle,f.jobClient].join(' ').toLowerCase().includes(q)));
-  $('#allFilesList').innerHTML=filtered.length?filtered.map(f=>`<div class="archive-row"><div class="archive-icon">${esc(CATEGORY_SHORT[f.category]||'FILE')}</div><div class="archive-name"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatDate(f.addedAt)}</span></div><button class="archive-job" data-open="${esc(f.jobId)}"><strong>${esc(f.jobCode)}</strong><span>${esc(f.jobArticle)}</span></button><div class="archive-size">${formatSize(f.size)}</div><button class="archive-open" data-drive-open="${esc(f.driveFileId||'')}" aria-label="Apri su Drive">${icon('external')}</button></div>`).join(''):`<div class="empty">Nessun file trovato nell'archivio.</div>`;
+  $('#allFilesList').innerHTML=filtered.length?filtered.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.jobCode||'').localeCompare(b.jobCode||'')||(a.name||'').localeCompare(b.name||'')).map(f=>`<div class="archive-row"><div class="archive-icon">${esc(CATEGORY_SHORT[f.category]||'FILE')}</div><div class="archive-name"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatDate(f.addedAt)}</span></div><button class="archive-job" data-open="${esc(f.jobId)}"><strong>${esc(f.jobCode)}</strong><span>${esc(f.jobArticle)}</span></button><div class="archive-size">${formatSize(f.size)}</div><button class="archive-open" data-drive-open="${esc(f.driveFileId||'')}" aria-label="Apri su Drive">${icon('external')}</button></div>`).join(''):`<div class="empty">Nessun file trovato nell'archivio.</div>`;
 }
 
 function openNewJob(){const form=$('#jobForm');form.reset();form.elements.quantity.value=1;$('#modalBackdrop').classList.remove('hidden');setTimeout(()=>form.elements.code?.focus(),100);}
@@ -250,6 +252,32 @@ async function uploadFiles(files,category){
   let count=0;for(const file of files){setSyncState('syncing',`Caricamento ${count+1}/${files.length}…`,file.name);if(category==='step'){try{const dimensions=await bfReadStepDimensions(file);bfWriteMeasuredDimensions(job,pendingStepRole||'finished',dimensions,file.name);toast(`STEP analizzato: ${dimensions.join(' × ')} mm`);}catch(error){toast(`STEP archiviato senza misure automatiche: ${error.message}`,true);}}const uploaded=await BadfishDrive.uploadJobFile(file,category,folders);job.files.push({id:`file_${Date.now()}_${Math.random().toString(16).slice(2)}`,driveFileId:uploaded.id,name:uploaded.name||file.name,category,size:Number(uploaded.size||file.size||0),mimeType:uploaded.mimeType||file.type||'',addedAt:now()});count++;}
   job.updatedAt=now();await saveAndSync(`${count} file caricati.`);openDetail(job.id);
 }
+
+
+// v7.1 - planning, knowledge base, and complete work hour totals.
+const bfHoursTotal = () => db.jobs.reduce((sum,j)=>sum+bfSessionSeconds(j)+(j.timerStartedAt?bfRunningSeconds(j):0),0);
+const bfHumanHours = secs => `${Math.floor(Math.max(0,secs)/3600)}h ${String(Math.floor(Math.max(0,secs)%3600/60)).padStart(2,'0')}m`;
+function bfRenderSummary(){
+ const t=$('#bfTotalHours'); if(t)t.textContent=bfHumanHours(bfHoursTotal());
+ const taskCount=$('#bfOpenTasks'); if(taskCount)taskCount.textContent=(db.tasks||[]).filter(x=>!x.done&&!x.deleted).length;
+ const urgent=$('#bfTodayTasks');if(urgent){const today=new Date().toLocaleDateString('sv-SE');const entries=(db.tasks||[]).filter(t=>!t.done&&!t.deleted&&(t.date||'')<=today).sort((a,b)=>(a.date||'').localeCompare(b.date||''));urgent.innerHTML=entries.length?entries.slice(0,4).map(t=>`<button class="bf-home-task" data-view="planner"><span>${esc(t.title)}</span><small>${esc(t.date||'Senza data')}</small></button>`).join(''):'<p class="bf-help">Nessuna attività in scadenza. Ottimo!</p>';}
+}
+let bfPlannerMonth=new Date().toISOString().slice(0,7);
+function bfRenderPlanner(){const root=$('#bfPlanner');if(!root)return;const items=(db.tasks||[]).filter(t=>!t.deleted);const [year,month]=bfPlannerMonth.split('-').map(Number);const start=new Date(year,month-1,1),days=new Date(year,month,0).getDate();const offset=(start.getDay()+6)%7;const today=new Date().toLocaleDateString('sv-SE');const names=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+ const grid=[...names.map(x=>`<span class="bf-cal-dayname">${x}</span>`),...Array.from({length:offset},()=>'<span></span>'),...Array.from({length:days},(_,i)=>{const d=`${bfPlannerMonth}-${String(i+1).padStart(2,'0')}`,n=items.filter(t=>t.date===d&&!t.done).length;return `<button class="bf-day ${d===today?'today':''} ${n?'has-tasks':''}" data-bf-date="${d}"><strong>${i+1}</strong>${n?`<small>${n} attività</small>`:''}</button>`;})].join('');
+ root.innerHTML=`<div class="bf-planner-layout"><article class="panel bf-planner-calendar"><div class="bf-heading-row"><div><span class="eyebrow">PIANIFICAZIONE</span><h3>${new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(start)}</h3></div><div class="bf-button-group"><button class="btn subtle" data-bf-month="-1" aria-label="Mese precedente">←</button><button class="btn subtle" data-bf-month="1" aria-label="Mese successivo">→</button></div></div><div class="bf-cal-grid">${grid}</div></article><article class="panel bf-form-card"><h3>Nuova attività</h3><p class="bf-help">Una scadenza o un promemoria, anche senza commessa.</p><form id="bfTaskForm" class="bf-inline-form"><label>Attività<input name="title" required maxlength="180" placeholder="Es. Preparare grezzo in quarzo"></label><label>Data<input name="date" type="date" value="${today}"></label><label>Commessa (facoltativa)<select name="jobId"><option value="">Attività generale</option>${db.jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.code)} · ${esc(j.article)}</option>`).join('')}</select></label><label>Dettagli<textarea name="description" rows="2" placeholder="Informazioni utili..."></textarea></label><button class="btn primary" type="submit">+ Aggiungi attività</button></form></article></div><article class="panel bf-list-panel"><div class="bf-heading-row"><h3>Le tue attività</h3><span class="bf-muted">${items.filter(t=>!t.done).length} da fare</span></div><div class="bf-task-items">${items.sort((a,b)=>(a.done-b.done)||(a.date||'9999').localeCompare(b.date||'9999')).map(t=>`<div class="bf-task-row ${t.done?'completed':''}"><input type="checkbox" aria-label="Completa attività" data-bf-task-toggle="${esc(t.id)}" ${t.done?'checked':''}><div><strong>${esc(t.title)}</strong><small>${esc(t.date||'Senza scadenza')}${t.jobId?' · '+esc(db.jobs.find(j=>j.id===t.jobId)?.code||'Commessa'):''}</small>${t.description?`<p>${esc(t.description)}</p>`:''}</div><button class="bf-small-delete" data-bf-task-delete="${esc(t.id)}" aria-label="Elimina attività">×</button></div>`).join('')||'<p class="empty">Nessuna attività. Aggiungine una usando il modulo.</p>'}</div></article>`;
+}
+function bfRenderNotes(){const root=$('#bfNotes');if(!root)return;let notes=(db.notes||[]).filter(n=>!n.deleted);const choice=root.dataset.category||'all';const query=(root.dataset.query||'').toLowerCase();notes=notes.filter(n=>(choice==='all'||n.category===choice)&&(!query||[n.title,n.body,n.machine].join(' ').toLowerCase().includes(query))).sort((a,b)=>dateMs(b.updatedAt||b.createdAt)-dateMs(a.updatedAt||a.createdAt));
+ root.innerHTML=`<div class="bf-notes-intro"><div><span class="eyebrow">MANUALE DI OFFICINA</span><h3>Appunti sempre a portata di mano</h3><p>Impostazioni delle macchine, prove, procedure e note generali. Usa titoli chiari per ritrovare subito ciò che cerchi.</p></div></div><div class="bf-notes-layout"><article class="panel bf-form-card"><h3>Salva un appunto</h3><form id="bfNoteForm" class="bf-inline-form"><label>Categoria<select name="category"><option value="machine">Settaggi macchina</option><option value="general">Appunti generali</option><option value="procedure">Procedure / controlli</option></select></label><label>Titolo<input name="title" required maxlength="180" placeholder="Es. Quarzo — punta diamantata 3 mm"></label><label>Macchina / strumento (facoltativo)<input name="machine" placeholder="Es. Genmitsu 3030"></label><label>Descrizione e parametri<textarea name="body" rows="7" required placeholder="Mandrino, avanzamento, profondità, refrigerazione, osservazioni..."></textarea></label><button class="btn primary" type="submit">Salva appunto</button></form></article><div class="bf-notes-content"><div class="bf-heading-row"><select id="bfNoteFilter" aria-label="Categoria appunti"><option value="all" ${choice==='all'?'selected':''}>Tutte le categorie</option><option value="machine" ${choice==='machine'?'selected':''}>Settaggi macchina</option><option value="general" ${choice==='general'?'selected':''}>Appunti generali</option><option value="procedure" ${choice==='procedure'?'selected':''}>Procedure</option></select><input id="bfNoteSearch" type="search" placeholder="Cerca negli appunti..." value="${esc(root.dataset.query||'')}"></div><div class="bf-note-grid">${notes.map(n=>`<article class="panel bf-note-card"><div class="bf-heading-row"><span class="bf-note-tag">${{machine:'Settaggi macchina',general:'Appunti generali',procedure:'Procedura'}[n.category]||'Appunto'}</span><button data-bf-note-delete="${esc(n.id)}" class="bf-small-delete" aria-label="Elimina appunto">×</button></div><h3>${esc(n.title)}</h3>${n.machine?`<p class="bf-note-machine">${esc(n.machine)}</p>`:''}<p class="bf-note-body">${esc(n.body)}</p><small>Aggiornato ${formatDate(n.updatedAt||n.createdAt)}</small><button class="btn subtle" data-bf-note-edit="${esc(n.id)}">Modifica</button></article>`).join('')||'<p class="empty">Nessun appunto in questa categoria.</p>'}</div></div></div>`;
+}
+let bfEditingNote=null;
+document.addEventListener('submit',async e=>{
+ if(e.target.id==='bfTaskForm'){e.preventDefault();const v=Object.fromEntries(new FormData(e.target));db.tasks.push({id:`task_${Date.now()}_${Math.random().toString(36).slice(2)}`,...v,done:false,createdAt:now(),updatedAt:now()});await saveAndSync('Attività salvata.');switchView('planner');}
+ if(e.target.id==='bfNoteForm'){e.preventDefault();const v=Object.fromEntries(new FormData(e.target));if(bfEditingNote){const n=db.notes.find(n=>n.id===bfEditingNote);if(n)Object.assign(n,v,{updatedAt:now()});bfEditingNote=null;}else db.notes.push({id:`note_${Date.now()}_${Math.random().toString(36).slice(2)}`,...v,createdAt:now(),updatedAt:now()});await saveAndSync('Appunto salvato.');switchView('notes');}
+});
+document.addEventListener('change',async e=>{if(e.target.matches('[data-bf-task-toggle]')){const t=db.tasks.find(x=>x.id===e.target.dataset.bfTaskToggle);if(t){t.done=e.target.checked;t.updatedAt=now();await saveAndSync('Attività aggiornata.');}}if(e.target.id==='bfNoteFilter'){const el=$('#bfNotes');el.dataset.category=e.target.value;bfRenderNotes();}});
+document.addEventListener('input',e=>{if(e.target.id==='bfNoteSearch'){const el=$('#bfNotes'),sel=e.target.selectionStart;el.dataset.query=e.target.value;bfRenderNotes();const input=$('#bfNoteSearch');input.focus();input.setSelectionRange(sel,sel);}});
+document.addEventListener('click',async e=>{const m=e.target.closest('[data-bf-month]');if(m){const [y,mo]=bfPlannerMonth.split('-').map(Number);const d=new Date(y,mo-1+Number(m.dataset.bfMonth),1);bfPlannerMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;bfRenderPlanner();return;}const date=e.target.closest('[data-bf-date]');if(date){$('#bfTaskForm [name="date"]').value=date.dataset.bfDate;$('#bfTaskForm [name="title"]').focus();return;}const td=e.target.closest('[data-bf-task-delete]');if(td){const t=db.tasks.find(x=>x.id===td.dataset.bfTaskDelete);if(t&&confirm('Eliminare questa attività?')){t.deleted=true;t.updatedAt=now();await saveAndSync('Attività eliminata.');}return;}const nd=e.target.closest('[data-bf-note-delete]');if(nd){const n=db.notes.find(x=>x.id===nd.dataset.bfNoteDelete);if(n&&confirm('Eliminare questo appunto?')){n.deleted=true;n.updatedAt=now();await saveAndSync('Appunto eliminato.');}return;}const ne=e.target.closest('[data-bf-note-edit]');if(ne){const n=db.notes.find(x=>x.id===ne.dataset.bfNoteEdit);if(!n)return;bfEditingNote=n.id;const form=$('#bfNoteForm');['title','category','machine','body'].forEach(k=>form.elements[k].value=n[k]||'');form.querySelector('button[type=submit]').textContent='Salva modifiche';form.scrollIntoView({behavior:'smooth'});return;}});
 
 function initEvents(){
   document.addEventListener('click',async e=>{
@@ -349,7 +377,7 @@ function bootBadfish(){
     render();
     initEvents();
     const requestedView=new URLSearchParams(location.search).get('view');
-    switchView(['jobs','files','settings'].includes(requestedView)?requestedView:'dashboard');
+    switchView(['jobs','files','settings','planner','notes'].includes(requestedView)?requestedView:'dashboard');
     const startupEmail=getPreferredGoogleEmail();
     setSyncState('',navigator.onLine?'Drive non collegato':'Modalità offline',startupEmail?`Account salvato: ${startupEmail}`:(navigator.onLine?'Configura l’account Google':'Dati locali disponibili'));
     if(!startupEmail)showGoogleEmailSetup();

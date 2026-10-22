@@ -17,7 +17,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=72">
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png?v=62">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png?v=62">
-  <link rel="stylesheet" href="./styles-v65.css?v=74">
+  <link rel="stylesheet" href="./styles-v65.css?v=75">
   <script src="./config.js?v=62"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -58,6 +58,7 @@
         <button class="nav-item active" data-view="dashboard"><svg><use href="#i-home"/></svg><span>Dashboard</span></button>
         <button class="nav-item" data-view="jobs"><svg><use href="#i-briefcase"/></svg><span>Commesse</span><b id="navJobsCount" class="nav-count">0</b></button>
         <button class="nav-item" data-view="clients"><svg><use href="#i-user"/></svg><span>Clienti</span></button>
+        <button class="nav-item" data-view="quotes"><svg><use href="#i-files"/></svg><span>Preventivi</span></button>
         <button class="nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>Archivio file</span></button>
         <button class="nav-item" data-view="planner"><svg><use href="#i-clock"/></svg><span>Calendario e attività</span></button>
         <button class="nav-item" data-view="notes"><svg><use href="#i-files"/></svg><span>Appunti e macchine</span></button>
@@ -161,6 +162,7 @@
         </section>
 
         <section id="clientsView" class="view"><div class="view-intro"><div><span class="eyebrow">RELAZIONI</span><h2>Clienti e storico ordini</h2><p>Tutte le commesse, i file e le ore lavorate per ogni cliente.</p></div></div><div id="bfClients"></div></section>
+        <section id="quotesView" class="view"><div class="view-intro"><div><span class="eyebrow">DOCUMENTI COMMERCIALI</span><h2>Preventivi</h2><p>Crea preventivi personalizzati e indipendenti dalle commesse.</p></div></div><div id="bfQuotes"></div></section>
         <section id="plannerView" class="view"><div class="view-intro"><div><span class="eyebrow">ORGANIZZAZIONE</span><h2>Calendario e attività</h2><p>Scadenze, cose da fare e promemoria per ogni lavorazione.</p></div></div><div id="bfPlanner"></div></section>
         <section id="notesView" class="view"><div class="view-intro"><div><span class="eyebrow">KNOW-HOW</span><h2>Appunti e settaggi macchina</h2><p>Tutti i parametri e le procedure, ricercabili in pochi secondi.</p></div></div><div id="bfNotes"></div></section>
         <section id="settingsView" class="view">
@@ -214,6 +216,7 @@
       <button class="mobile-nav-item" data-view="jobs"><svg><use href="#i-briefcase"/></svg><span>Commesse</span></button>
       <button class="mobile-create" data-create-job aria-label="Nuova commessa"><svg><use href="#i-plus"/></svg></button>
       <button class="mobile-nav-item" data-view="clients"><svg><use href="#i-user"/></svg><span>Clienti</span></button>
+      <button class="mobile-nav-item" data-view="quotes"><svg><use href="#i-files"/></svg><span>Preventivi</span></button>
       <button class="mobile-nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>File</span></button>
       <button class="mobile-nav-item" data-view="planner"><svg><use href="#i-clock"/></svg><span>Attività</span></button><button class="mobile-nav-item" data-view="notes"><svg><use href="#i-files"/></svg><span>Appunti</span></button><button class="mobile-nav-item" data-view="settings"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
     </nav>
@@ -264,7 +267,7 @@
 
   <script src="./boot-v62.js"></script>
   <script src="./drive-v62.js"></script>
-  <script src="./qr-engine.js?v=74"></script>
-  <script src="./app-v65.js?v=74"></script>
+  <script src="./qr-engine.js?v=75"></script>
+  <script src="./app-v65.js?v=75"></script>
 </body>
 </html>

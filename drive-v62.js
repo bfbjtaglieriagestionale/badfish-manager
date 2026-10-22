@@ -159,6 +159,15 @@
     });
   }
 
+  // Crea un file di backup autonomo, senza sovrascrivere copie precedenti.
+  async function createDatabaseSnapshot(rootFolderId, remoteDatabase) {
+    const folder = await ensureFolder('BACKUP_DATABASE', rootFolderId);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const name = `badfish_data_prima_sync_${stamp}.json`;
+    return multipartUpload({name, parentId:folder.id, mimeType:'application/json',
+      blob:new Blob([JSON.stringify(remoteDatabase,null,2)], {type:'application/json'})});
+  }
+
   async function updateMedia(fileId, blob, mimeType = 'application/json') {
     return api(`${DRIVE_UPLOAD_API}/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,name,mimeType,modifiedTime,size,webViewLink,parents`, {
       method: 'PATCH',
@@ -252,6 +261,7 @@
     uploadJobFile,
     downloadJson,
     updateMedia,
+    createDatabaseSnapshot,
     deleteFile,
     getClientId: clientId,
     getCurrentUser() { return currentUser ? { ...currentUser } : null; },

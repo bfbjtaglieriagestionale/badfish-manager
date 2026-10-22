@@ -259,9 +259,20 @@ async function connectDrive({email='',silent=false}={}){
 async function syncDrive(showToast=false){
   if(syncing)return;if(!BadfishDrive.isConnected()){if(showToast)toast('Collega prima Google Drive.',true);return;}syncing=true;
   try{
-    setSyncState('syncing','Sincronizzazione…','Google Drive');driveRefs=await BadfishDrive.ensureRootStructure();const remote=normalizeDb(await BadfishDrive.downloadJson(driveRefs.dbFile.id));db=mergeDb(db,remote);const preferred=getPreferredGoogleEmail();if(preferred&&isGoogleEmailRemembered()){db.settings.googleAccountEmail=preferred;db.settings.rememberGoogleAccount=true;}
+    setSyncState('syncing','Sincronizzazione…','Google Drive');driveRefs=await BadfishDrive.ensureRootStructure();const rawRemote=await BadfishDrive.downloadJson(driveRefs.dbFile.id);const remote=normalizeDb(rawRemote);const remoteFingerprint=JSON.stringify(rawRemote);db=mergeDb(db,remote);const preferred=getPreferredGoogleEmail();if(preferred&&isGoogleEmailRemembered()){db.settings.googleAccountEmail=preferred;db.settings.rememberGoogleAccount=true;}
     for(const job of db.jobs){if(!job.driveFolderId){const folders=await BadfishDrive.ensureJobStructure(job,driveRefs.jobs.id);job.driveFolderId=folders.jobFolder.id;job.driveFolderUrl=BadfishDrive.folderUrl(folders.jobFolder.id);job.updatedAt=now();}}
-    db.meta.updatedAt=now();localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(db));await BadfishDrive.updateMedia(driveRefs.dbFile.id,new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),'application/json');const stamp=now();localStorage.setItem(LAST_SYNC_KEY,stamp);render();setSyncState('ok','Drive sincronizzato',new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(stamp)));if(showToast)toast('Google Drive sincronizzato.');
+    db.meta.updatedAt=now();
+    // Ferma l'upload se il database remoto e' cambiato dopo la lettura iniziale.
+    // Controllo best effort, NON atomico: non elimina ogni race condition multi-dispositivo.
+    const currentRemote=await BadfishDrive.downloadJson(driveRefs.dbFile.id);
+    if(JSON.stringify(currentRemote)!==remoteFingerprint){
+      throw new Error('Drive modificato da un altro dispositivo durante la sincronizzazione. Riprova la sincronizzazione dopo aver verificato i dati.');
+    }
+    setSyncState('syncing','Backup database su Drive…','Protezione prima della scrittura');
+    await BadfishDrive.createDatabaseSnapshot(driveRefs.root.id,currentRemote);
+    // Il salvataggio locale deve riuscire prima della sovrascrittura remota.
+    localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(db));
+    await BadfishDrive.updateMedia(driveRefs.dbFile.id,new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),'application/json');const stamp=now();localStorage.setItem(LAST_SYNC_KEY,stamp);render();setSyncState('ok','Drive sincronizzato',new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(stamp)));if(showToast)toast('Google Drive sincronizzato.');
   }catch(err){setSyncState('error','Errore sincronizzazione','Dati locali conservati');if(showToast)toast(err.message,true);throw err;}finally{syncing=false;}
 }
 async function saveAndSync(message='Salvato.'){

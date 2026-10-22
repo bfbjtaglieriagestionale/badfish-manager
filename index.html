@@ -197,6 +197,15 @@
               <button id="installPwaBtn" class="btn secondary hidden"><svg><use href="#i-install"/></svg> Installa Badfish Manager</button>
             </article>
 
+
+            <article class="panel settings-card" id="bfBackupCard">
+              <div class="settings-icon"><svg><use href="#i-cloud"/></svg></div>
+              <div class="settings-copy"><span class="eyebrow">SICUREZZA DATI</span><h3>Backup del gestionale</h3><p>Scarica una copia di commesse, clienti, ore, appunti, attività e preventivi. I file effettivi restano su Google Drive: il backup JSON contiene solo i loro riferimenti.</p></div>
+              <div class="settings-actions"><button type="button" id="bfExportBackup" class="btn primary">Scarica backup JSON</button><label class="btn subtle" for="bfVerifyBackup" style="cursor:pointer">Verifica un backup</label><input id="bfVerifyBackup" type="file" accept=".json,application/json" style="display:none"></div>
+              <p id="bfBackupStatus" role="status" class="settings-note">Nessun backup verificato.</p>
+              <small class="settings-note">La verifica non importa e non modifica i dati. Conserva il backup in un posto sicuro: può contenere dati dei clienti.</small>
+            </article>
+
             <article class="panel settings-card technical-settings">
               <div class="settings-icon"><svg><use href="#i-settings"/></svg></div>
               <div class="settings-copy"><span class="eyebrow">AVANZATE</span><h3>Configurazione tecnica</h3><p>Non serve modificarla durante l'uso normale.</p></div>
@@ -268,8 +277,9 @@
   <div id="toast" class="toast hidden" role="status"></div>
 
   <script src="./boot-v62.js"></script>
-  <script src="./drive-v62.js"></script>
+  <script src="./drive-v62.js?v=79"></script>
   <script src="./qr-engine.js?v=75"></script>
-  <script src="./app-v65.js?v=77"></script>
+  <script src="./app-v65.js?v=79"></script>
+  <script src="./backup-v78.js?v=78"></script>
 </body>
 </html>

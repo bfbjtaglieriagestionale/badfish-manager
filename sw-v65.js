@@ -1,6 +1,6 @@
-const CACHE='badfish-manager-v79';
+const CACHE='badfish-manager-v81';
 const SHELL=[
-  './','./index.html','./styles-v65.css?v=76','./config.js?v=62','./boot-v62.js','./drive-v62.js?v=79','./app-v65.js?v=79',
+  './','./index.html','./mobile-nav-v81.css?v=81','./mobile-nav-v81.js?v=81','./styles-v65.css?v=76','./config.js?v=62','./boot-v62.js','./drive-v62.js?v=79','./app-v65.js?v=79',
   './qr-engine.js?v=75','./manifest.webmanifest?v=75','./assets/badfish-logo.png?v=64','./assets/icon-192.png?v=64',
   './assets/icon-512.png','./assets/apple-touch-icon.png?v=64','./assets/favicon-32.png?v=64'
 ];

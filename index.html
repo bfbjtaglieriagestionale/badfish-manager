@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="./badfish-restyling.css?v=2">
 <link rel="stylesheet" href="./badfish-v77.css?v=1">
   <link rel="stylesheet" href="./stats-v80.css?v=80">
+  <link rel="stylesheet" href="./mobile-nav-v81.css?v=81">
 </head>
 <body>
   <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -225,14 +226,25 @@
       </div>
     </main>
 
+    <div id="mobileMoreBackdrop" class="mobile-more-backdrop" hidden></div>
+    <section id="mobileMorePanel" class="mobile-more-panel" aria-label="Tutte le sezioni" aria-hidden="true" hidden>
+      <div class="mobile-more-title"><strong>Tutte le sezioni</strong><button id="mobileMoreClose" type="button" aria-label="Chiudi menu">✕</button></div>
+      <div class="mobile-more-grid">
+        <button data-view="clients"><svg><use href="#i-user"/></svg>Clienti</button>
+        <button data-view="quotes"><svg><use href="#i-files"/></svg>Preventivi</button>
+        <button data-view="files"><svg><use href="#i-folder"/></svg>Archivio file</button>
+        <button data-view="planner"><svg><use href="#i-clock"/></svg>Calendario e attività</button>
+        <button data-view="notes"><svg><use href="#i-files"/></svg>Appunti e macchine</button>
+        <button data-view="stats"><svg><use href="#i-clock"/></svg>Statistiche</button>
+        <button data-view="settings"><svg><use href="#i-settings"/></svg>Impostazioni</button>
+      </div>
+    </section>
     <nav class="mobile-nav" aria-label="Navigazione mobile">
       <button class="mobile-nav-item active" data-view="dashboard"><svg><use href="#i-home"/></svg><span>Home</span></button>
       <button class="mobile-nav-item" data-view="jobs"><svg><use href="#i-briefcase"/></svg><span>Commesse</span></button>
       <button class="mobile-create" data-create-job aria-label="Nuova commessa"><svg><use href="#i-plus"/></svg></button>
-      <button class="mobile-nav-item" data-view="clients"><svg><use href="#i-user"/></svg><span>Clienti</span></button>
-      <button class="mobile-nav-item" data-view="quotes"><svg><use href="#i-files"/></svg><span>Preventivi</span></button>
-      <button class="mobile-nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>File</span></button>
-      <button class="mobile-nav-item" data-view="planner"><svg><use href="#i-clock"/></svg><span>Attività</span></button><button class="mobile-nav-item" data-view="notes"><svg><use href="#i-files"/></svg><span>Appunti</span></button><button class="mobile-nav-item" data-view="settings"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
+      <button class="mobile-nav-item" data-view="files"><svg><use href="#i-folder"/></svg><span>File</span></button>
+      <button class="mobile-nav-item mobile-more-trigger" id="mobileMoreButton" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="mobileMorePanel"><svg><use href="#i-more"/></svg><span>Altro</span></button>
     </nav>
   </div>
 
@@ -285,5 +297,6 @@
   <script src="./app-v65.js?v=79"></script>
   <script src="./backup-v78.js?v=78"></script>
   <script src="./stats-v80.js?v=80"></script>
+  <script src="./mobile-nav-v81.js?v=81"></script>
 </body>
 </html>

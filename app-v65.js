@@ -170,9 +170,9 @@ function switchView(view){
   currentView=view;
   $$('.view').forEach(v=>v.classList.remove('active'));$$('[data-view]').forEach(v=>v.classList.remove('active'));
   $(`#${view}View`)?.classList.add('active');$$(`[data-view="${view}"]`).forEach(v=>v.classList.add('active'));
-  const titles={dashboard:['PANORAMICA','Home'],jobs:['PRODUZIONE','Commesse'],files:['ARCHIVIO','File'],planner:['ORGANIZZAZIONE','Calendario e attività'],notes:['CONOSCENZE','Appunti'],clients:['RELAZIONI','Clienti'],quotes:['DOCUMENTI','Preventivi'],settings:['PREFERENZE','Impostazioni']};
+  const titles={dashboard:['PANORAMICA','Home'],jobs:['PRODUZIONE','Commesse'],files:['ARCHIVIO','File'],planner:['ORGANIZZAZIONE','Calendario e attività'],notes:['CONOSCENZE','Appunti'],clients:['RELAZIONI','Clienti'],quotes:['DOCUMENTI','Preventivi'],stats:['ANALISI','Centro di controllo'],settings:['PREFERENZE','Impostazioni']};
   $('#pageKicker').textContent=titles[view]?.[0]||'';$('#pageTitle').textContent=titles[view]?.[1]||'Badfish';
-  if(view==='files')renderFiles();if(view==='jobs')renderJobs();if(view==='planner')bfRenderPlanner();if(view==='notes')bfRenderNotes();if(view==='clients')bfRenderClients();if(view==='quotes')bfRenderQuotes();window.scrollTo({top:0,behavior:'smooth'});
+  if(view==='files')renderFiles();if(view==='jobs')renderJobs();if(view==='planner')bfRenderPlanner();if(view==='notes')bfRenderNotes();if(view==='clients')bfRenderClients();if(view==='quotes')bfRenderQuotes();if(view==='stats'&&typeof bf80RenderStats==='function')bf80RenderStats();window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function render(){

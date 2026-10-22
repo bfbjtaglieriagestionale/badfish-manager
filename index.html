@@ -22,6 +22,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="./badfish-restyling.css?v=2">
 <link rel="stylesheet" href="./badfish-v77.css?v=1">
+  <link rel="stylesheet" href="./stats-v80.css?v=80">
 </head>
 <body>
   <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -64,6 +65,7 @@
         <button class="nav-item" data-view="files"><svg><use href="#i-files"/></svg><span>Archivio file</span></button>
         <button class="nav-item" data-view="planner"><svg><use href="#i-clock"/></svg><span>Calendario e attività</span></button>
         <button class="nav-item" data-view="notes"><svg><use href="#i-files"/></svg><span>Appunti e macchine</span></button>
+        <button class="nav-item" data-view="stats"><svg><use href="#i-clock"/></svg><span>Statistiche</span></button>
         <button class="nav-item" data-view="settings"><svg><use href="#i-settings"/></svg><span>Impostazioni</span></button>
       </nav>
 
@@ -73,7 +75,7 @@
         <span id="syncSubtitle">Cache locale disponibile</span>
         <button id="sidebarSyncBtn" class="mini-action"><svg><use href="#i-refresh"/></svg> Sincronizza</button>
       </div>
-      <div class="sidebar-version">Badfish Manager <b>v7.4</b></div>
+      <div class="sidebar-version">Badfish Manager <b>v8.0</b></div>
     </aside>
 
     <main class="main-shell">
@@ -92,6 +94,7 @@
       </header>
 
       <div class="content-shell">
+        <section id="statsView" class="view"><div id="bf80StatsRoot"></div></section>
         <section id="dashboardView" class="view active">
           <article class="welcome-card">
             <div class="welcome-copy">
@@ -281,5 +284,6 @@
   <script src="./qr-engine.js?v=75"></script>
   <script src="./app-v65.js?v=79"></script>
   <script src="./backup-v78.js?v=78"></script>
+  <script src="./stats-v80.js?v=80"></script>
 </body>
 </html>

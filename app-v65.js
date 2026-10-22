@@ -90,7 +90,11 @@ function bfEstimateNC(source, allowance=2){
   // Z of stock cannot be established from NC alone; display depth of toolpath only.
   return {x:Math.round((dx+2*a)*1000)/1000,y:Math.round((dy+2*a)*1000)/1000,zDepth:Math.round((high.Z-low.Z)*1000)/1000,bounds,allowance:a,lines:count,rapid,arc,units,warnings:[...unsupported], method:'NC toolpath X/Y + margin; Z depth only'};
 }
-function bfNCPanel(j){const r=j.ncEstimate;return `<section class="detail-section bf-nc-panel"><div class="bf-section-title"><h4>Stima grezzo dal programma NC</h4><span class="bf-tag">STIMA · NON MISURA</span></div><p class="bf-help">Legge i movimenti X/Y/Z del G-code. Calcola X e Y da traiettorie di taglio più un margine; la quota Z mostra solo l’escursione utensile. La dimensione reale del grezzo e il diametro fresa non sono ricavabili in modo affidabile dal solo NC.</p><div class="bf-nc-grid"><label class="field-label">Margine per lato (mm)<input id="bfNcMargin" type="number" min="0" max="1000" step="0.1" value="${esc(r?.allowance??2)}"></label><label class="field-label">Programma NC<input id="bfNcInput" type="file" accept=".nc,.tap,.cnc,.gcode,.txt"></label></div><button class="btn primary wide" id="bfAnalyzeNC">Analizza programma NC</button><div id="bfNcResult">${r?bfRenderNCResult(r):'<p class="bf-help">Seleziona il file NC usato sulla macchina per ottenere una stima.</p>'}</div></section>`;}
+function bfNCPanel(j){
+ const pieces=Array.isArray(j.rawPieces)?j.rawPieces:[];
+ const files=(j.files||[]).filter(f=>f.category==='nc'||/\.(nc|tap|cnc|gcode)$/i.test(f.name||''));
+ return `<section class="detail-section bf-nc-panel"><div class="bf-section-title"><h4>Grezzi dei singoli pezzi</h4><span class="bf-tag">STIME DA NC</span></div><p class="bf-help">Aggiungi un pezzo per ogni grezzo diverso. Scegli il programma NC già caricato nella commessa; nessun nuovo caricamento è necessario. X e Y sono stime della traiettoria con margine, Z è solo l'escursione utensile.</p><button class="btn primary" id="bfAddRawPiece">+ Aggiungi pezzo</button><div class="bf-piece-list">${pieces.map((r,i)=>`<div class="bf-piece-card" data-piece="${esc(r.id)}"><div class="bf-section-title"><h4>${esc(r.title||`Pezzo ${i+1}`)}</h4><button type="button" class="btn subtle" data-piece-delete="${esc(r.id)}">Elimina</button></div><label class="field-label">Titolo del pezzo<input data-piece-title="${esc(r.id)}" maxlength="160" value="${esc(r.title||'')}"></label><div class="bf-nc-grid"><label class="field-label">File NC già su Drive<select data-piece-file="${esc(r.id)}"><option value="">Seleziona un file NC</option>${files.map(f=>`<option value="${esc(f.id)}" ${r.fileId===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><label class="field-label">Margine per lato (mm)<input type="number" data-piece-margin="${esc(r.id)}" min="0" max="1000" step="0.1" value="${esc(r.allowance??2)}"></label></div><button class="btn secondary" data-piece-analyze="${esc(r.id)}">Calcola grezzo stimato</button>${r.estimate?bfRenderNCResult(r.estimate):'<p class="bf-help">Nessuna stima ancora calcolata.</p>'}</div>`).join('')||'<p class="bf-help">Nessun pezzo inserito. Premi “Aggiungi pezzo” per iniziare.</p>'}</div>${j.ncEstimate?'<details><summary>Stima unica della versione precedente</summary>'+bfRenderNCResult(j.ncEstimate)+'</details>':''}</section>`;
+}
 function bfRenderNCResult(r){return `<div class="bf-nc-results"><div class="bf-nc-number"><small>X stimata</small><strong>${Number(r.x).toLocaleString('it-IT')} mm</strong></div><div class="bf-nc-number"><small>Y stimata</small><strong>${Number(r.y).toLocaleString('it-IT')} mm</strong></div><div class="bf-nc-number"><small>Escursione Z utensile</small><strong>${Number(r.zDepth).toLocaleString('it-IT')} mm</strong></div></div><p class="bf-help">${esc(r.fileName||'NC')} · ${r.lines} segmenti · margine ${r.allowance} mm/lato${r.units==='inch → mm'?' · pollici convertiti':''}</p>${r.warnings?.length?`<p class="bf-nc-warn">⚠️ Analisi parziale: ${esc(r.warnings.join(' · '))}. Controlla le misure in CAM.</p>`:''}<p class="bf-help"><b>Non sono inclusi:</b> raggio utensile, orientamento del grezzo, fissaggi, superfici da spianare e quote reali dello stock.</p>`;}
 function bfClockFormat(sec){sec=Math.max(0,Math.floor(sec||0));return `${String(Math.floor(sec/3600)).padStart(2,'0')}:${String(Math.floor(sec%3600/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;}
 function bfRunningSeconds(j){return j.timerStartedAt?Math.max(0,Math.floor((Date.now()-Date.parse(j.timerStartedAt))/1000))+Math.max(0,Number(j.timerAccumulatedSeconds)||0):Math.max(0,Number(j.timerAccumulatedSeconds)||0);}
@@ -448,6 +452,37 @@ function initEvents(){
       j.workSessions.push({id:`session_${Date.now()}`,phase:$('#bfPhase').value,minutes:h*60+m,seconds:(h*60+m)*60,createdAt:now(),endedAt:now(),manual:true});
     }
     j.updatedAt=now();await saveAndSync('Lavorazione aggiornata.');openDetail(j.id);
+  });
+  document.addEventListener('click',async e=>{
+    const add=e.target.closest('#bfAddRawPiece'),del=e.target.closest('[data-piece-delete]'),run=e.target.closest('[data-piece-analyze]');
+    if(!add&&!del&&!run)return;
+    const job=db.jobs.find(j=>j.id===selectedJobId);if(!job)return;
+    job.rawPieces=Array.isArray(job.rawPieces)?job.rawPieces:[];
+    if(add){job.rawPieces.push({id:`piece_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title:`Pezzo ${job.rawPieces.length+1}`,fileId:'',allowance:2});}
+    if(del){if(!confirm('Eliminare questo pezzo e la sua stima? I file NC su Drive non verranno eliminati.'))return;job.rawPieces=job.rawPieces.filter(p=>p.id!==del.dataset.pieceDelete);}
+    if(run){
+      const piece=job.rawPieces.find(p=>p.id===run.dataset.pieceAnalyze);if(!piece)return;
+      const f=(job.files||[]).find(x=>x.id===piece.fileId);
+      if(!f?.driveFileId){toast('Seleziona un file NC già archiviato nella commessa.',true);return;}
+      if(!window.BadfishDrive?.isConnected()){toast('Collega Google Drive per leggere il file NC.',true);return;}
+      try{
+        run.disabled=true;run.textContent='Analisi in corso…';
+        const nc=await BadfishDrive.downloadText(f.driveFileId);
+        const result=bfEstimateNC(nc,piece.allowance);
+        result.fileName=f.name;result.fileId=f.id;result.estimatedAt=now();
+        piece.estimate=result;
+      }catch(err){toast('Analisi NC non riuscita: '+err.message,true);run.disabled=false;run.textContent='Calcola grezzo stimato';return;}
+    }
+    job.updatedAt=now();await saveAndSync('Pezzi e misure salvati.');openDetail(job.id);
+  });
+  document.addEventListener('change',async e=>{
+    const id=e.target.dataset.pieceTitle||e.target.dataset.pieceFile||e.target.dataset.pieceMargin;
+    if(!id)return;
+    const job=db.jobs.find(j=>j.id===selectedJobId),piece=job?.rawPieces?.find(p=>p.id===id);if(!piece)return;
+    if(e.target.dataset.pieceTitle){piece.title=e.target.value.trim().slice(0,160)||'Senza titolo';}
+    if(e.target.dataset.pieceFile){piece.fileId=e.target.value;piece.estimate=null;}
+    if(e.target.dataset.pieceMargin){let n=Number(e.target.value);if(!Number.isFinite(n)||n<0||n>1000){toast('Margine non valido.',true);return;}piece.allowance=n;piece.estimate=null;}
+    job.updatedAt=now();await saveAndSync('Dati del pezzo salvati.');openDetail(job.id);
   });
   document.addEventListener('click',async e=>{
     const btn=e.target.closest('#bfAnalyzeNC');if(!btn)return;

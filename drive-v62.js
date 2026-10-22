@@ -176,6 +176,13 @@
     });
   }
 
+  async function downloadText(fileId) {
+    const result=await api(`/files/${encodeURIComponent(fileId)}?alt=media`);
+    if(result instanceof Blob)return result.text();
+    if(typeof result==='string')return result;
+    throw new Error('Il file NC non è leggibile come testo.');
+  }
+
   async function downloadJson(fileId) {
     const payload = await api(`/files/${encodeURIComponent(fileId)}?alt=media`);
     // Google Drive può restituire il JSON già deserializzato quando il
@@ -260,6 +267,7 @@
     ensureJobStructure,
     uploadJobFile,
     downloadJson,
+    downloadText,
     updateMedia,
     createDatabaseSnapshot,
     deleteFile,

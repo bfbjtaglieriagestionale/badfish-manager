@@ -1,0 +1,98 @@
+/* Badfish Manager v7.5 — Restyling grafico CSS-only.
+   Non modifica dati, commesse, accesso Drive o logica JavaScript.
+   Rimozione: cancellare il link a questo stylesheet da index.html. */
+:root {
+  --bg:#f3f6fa!important;--bg-2:#eaf0f7!important;
+  --text:#18273d!important;--muted:#66768a!important;--muted-2:#8793a3!important;
+  --line:#e3e9f1!important;--line-strong:#d3dce8!important;
+  --accent:#325fd3!important;--accent-2:#254ab0!important;
+  --accent-soft:#edf3ff!important;--radius:18px;--radius-sm:12px;
+  --shadow:0 10px 32px rgba(31,48,75,.06)!important;
+}
+html, body, .app-shell, .main-shell, .content-shell { background:#f3f6fa!important; color:#18273d!important; }
+body { font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important; line-height:1.5; }
+/* Navigazione: risalta la voce selezionata e mantiene la leggibilità */
+.sidebar { background:#101e33!important; border-right:1px solid #1f344f!important; box-shadow:4px 0 25px rgba(11,29,52,.04); }
+.sidebar .brand { margin-bottom:16px; }
+.sidebar .nav-item { min-height:46px; border-radius:12px!important; margin:2px 0; transition:background .15s,transform .15s; }
+.sidebar .nav-item:hover { background:#213853!important; transform:translateX(2px); }
+.sidebar .nav-item.active { background:#315d9b!important; color:#fff!important; box-shadow:inset 3px 0 #86b7ff; }
+.sidebar .nav-item svg { opacity:.9; }
+.sidebar-drive { background:#192b43!important; border:1px solid #29415d!important; border-radius:15px!important; padding:14px!important; }
+.sidebar-version { opacity:.85; }
+/* Barra superiore e gerarchia di pagina */
+.topbar { background:rgba(255,255,255,.97)!important; backdrop-filter:blur(14px); border-bottom:1px solid #e2e9f3!important; box-shadow:0 2px 12px rgba(40,60,95,.025); }
+.topbar h1 { font-weight:790!important; letter-spacing:-.035em!important; }
+.page-kicker { color:#5873a5!important; letter-spacing:.12em!important; font-weight:780!important; }
+.content-shell { max-width:1480px; }
+.view-intro { margin-bottom:22px!important; }
+.view-intro h2 { font-size:clamp(23px,2.3vw,31px)!important; font-weight:780; color:#172840!important; }
+.view-intro p { color:#62758d!important; max-width:70ch; }
+/* Superfici, schede e card coerenti */
+.panel,.stat-card,.job-card,.file-stat,.settings-card,.bf-client-stat,.bf-client-metrics>div,.bf-note-card,.bf-business-panel,.bf-quote-list,.bf-quote-editor,.bf-list-panel,.bf-form-card,.bf-planner-calendar,.detail-section,.modal,.onboarding-card {
+  background:#fff!important; color:#18283f!important;
+  border:1px solid #e1e8f2!important; border-radius:17px!important;
+  box-shadow:0 6px 24px rgba(26,48,77,.045)!important;
+}
+.panel h2,.panel h3,.panel h4,.detail-section h4 { color:#162a46!important; }
+.stat-card { min-height:122px!important; }
+.stat-card strong,.bf-summary-card strong { letter-spacing:-.04em; }
+.bf-summary-card { min-height:130px; }
+.bf-summary-card>span,.stat-card span { color:#5f7187!important; }
+/* Titolo iniziale meno ingombrante e CTA chiare */
+.welcome-card { background:linear-gradient(115deg,#17375e 0%,#234e82 100%)!important; min-height:220px!important; padding:30px 34px!important; border-radius:22px!important; border:0!important; }
+.welcome-card h2 { font-size:clamp(26px,3.2vw,41px)!important; line-height:1.15!important; }
+.welcome-card p { max-width:55ch; }
+/* Pulsanti accessibili con focus visibile */
+.btn { min-height:44px!important; padding:0 17px!important; border-radius:11px!important; font-weight:710!important; box-shadow:none!important; }
+.btn.primary { background:#315fd4!important; border-color:#315fd4!important; color:white!important; }
+.btn.primary:hover { background:#264db4!important; }
+.btn.subtle,.btn.secondary,.btn.ghost { background:#edf2fb!important; border:1px solid #dce5f2!important; color:#223b61!important; }
+.btn.subtle:hover,.btn.secondary:hover,.btn.ghost:hover { background:#dfe9f8!important; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid rgba(49,111,230,.5)!important; outline-offset:2px!important; }
+button:disabled { opacity:.55; cursor:not-allowed; }
+/* Form: campi omogenei e dimensioni utilizzabili al tocco */
+input:not([type=checkbox]):not([type=radio]),select,textarea { background:#fff!important; color:#1b2d47!important; border:1px solid #cdd9e7!important; border-radius:10px!important; min-height:43px; }
+textarea { line-height:1.55; }
+label { line-height:1.4; }
+/* Commesse e archivio: nomi file più distinguibili */
+.job-card { transition:box-shadow .16s,transform .16s,border-color .16s; }
+.job-card:hover { border-color:#bad0ec!important; box-shadow:0 12px 30px rgba(29,56,93,.09)!important; transform:translateY(-2px); }
+.archive-row,.bf-client-list-row,.bf-client-order,.bf-quote-entry { border-radius:11px!important; }
+.archive-row:hover,.bf-client-list-row:hover,.bf-client-order:hover { background:#f0f5fc!important; }
+.archive-name,.file-info { min-width:0; overflow-wrap:anywhere; }
+.bf-client-list-row.selected,.bf-quote-entry.selected { border-color:#88b0eb!important; background:#eef5ff!important; }
+/* Preventivi: editor leggibile senza cambiare struttura o dati */
+.bf-quote-layout { gap:20px!important; }
+.bf-quote-list,.bf-quote-editor { padding:24px!important; }
+.bf-quote-line { background:#f4f7fc!important; border:1px solid #e7edf5; }
+.bf-quote-total { border-top:1px solid #e2eaf5; padding-top:18px; }
+.bf-quote-internal { border:1px solid #e2eaf5; }
+/* Scheda di commessa più pulita */
+.detail-drawer { background:#f5f7fb!important; }
+.detail-section { padding:20px!important; }
+.bf-tech-panel,.bf-business-panel { border-radius:16px!important; }
+.bf-dim-set { background:#f5f8fc!important; }
+/* Calendario e note */
+.bf-day { border-radius:9px!important; }
+.bf-note-card { gap:12px; }
+/* Navigazione mobile: più spazio ai comandi e ai contenuti */
+@media(max-width:860px) {
+  .content-shell { padding:20px 16px 94px!important; }
+  .topbar { box-shadow:0 3px 20px rgba(26,48,77,.05); }
+  .mobile-nav { background:#fff!important; border-top:1px solid #e1e8f3!important; }
+  .mobile-nav-item { min-height:55px; }
+  .view-intro { align-items:flex-start; }
+}
+@media(max-width:620px) {
+  .content-shell { padding:16px 12px 92px!important; }
+  .welcome-card { min-height:0!important; padding:23px 19px!important; }
+  .welcome-visual { opacity:.17!important; }
+  .stat-card,.panel,.bf-client-left,.bf-client-right,.bf-quote-list,.bf-quote-editor { padding:16px!important; }
+  .bf-quote-line { gap:8px!important; }
+  .bf-client-detail-head { flex-direction:column; }
+  .bf-client-head-actions { justify-content:flex-start; }
+  .detail-section { padding:16px!important; }
+  .detail-drawer { width:100vw!important; }
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }}

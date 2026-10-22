@@ -1,16 +1,74 @@
-const CACHE='badfish-manager-v6-premium';
-const SHELL=[
-  './','./index.html','./styles.css?v=6','./config.js?v=6','./drive.js?v=6','./app.js?v=6',
-  './manifest.webmanifest?v=6','./assets/badfish-logo.png?v=6','./assets/icon-192.png?v=6',
-  './assets/icon-512.png?v=6','./assets/apple-touch-icon.png?v=6','./assets/favicon-32.png?v=6'
+const CACHE = "badfish-manager-v90";
+const SHELL = [
+  "./",
+  "./index.html",
+  "./sw.js",
+  "./manifest.webmanifest?v=72",
+  "./assets/favicon-32.png?v=62",
+  "./assets/apple-touch-icon.png?v=62",
+  "./config.js?v=62",
+  "./styles.css?v=90",
+  "./assets/icon-192.png?v=62",
+  "./assets/badfish-logo.png?v=62",
+  "./drive.js?v=90",
+  "./qr-engine.js?v=75",
+  "./vendor/fflate-0.8.2.js",
+  "./vendor/fzstd-0.1.1.js",
+  "./fusion-stock.js?v=90",
+  "./app.js?v=90",
+  "./backup.js?v=78",
+  "./stats.js?v=80",
+  "./mobile-nav.js?v=85",
+  "./job-tabs.js?v=90",
+  "./assets/icon-512.png",
 ];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  const url=new URL(event.request.url);if(url.origin!==location.origin)return;
-  const isNavigation=event.request.mode==='navigate';
-  event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return response;}).catch(async()=>{
-    const cached=await caches.match(event.request);if(cached)return cached;if(isNavigation)return caches.match('./index.html');return new Response('Offline',{status:503,statusText:'Offline'});
-  }));
+self.addEventListener("install", (event) =>
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.addAll(SHELL))
+      .then(() => self.skipWaiting()),
+  ),
+);
+self.addEventListener("activate", (event) =>
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== CACHE && /^badfish-manager-v/i.test(k))
+            .map((k) => caches.delete(k)),
+        ),
+      )
+      .then(() => self.clients.claim()),
+  ),
+);
+self.addEventListener("fetch", (event) => {
+  if (
+    event.request.method !== "GET" ||
+    new URL(event.request.url).origin !== location.origin
+  )
+    return;
+  event.respondWith(
+    fetch(event.request, { cache: "no-store" })
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches
+            .open(CACHE)
+            .then((c) => c.put(event.request, copy))
+            .catch(() => {});
+        }
+        return response;
+      })
+      .catch(
+        async () =>
+          (await caches.match(event.request)) ||
+          (event.request.mode === "navigate"
+            ? await caches.match("./index.html")
+            : null) ||
+          new Response("Offline", { status: 503 }),
+      ),
+  );
 });

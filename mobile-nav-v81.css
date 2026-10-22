@@ -15,3 +15,6 @@
 }
 @media(max-width:370px){.mobile-more-grid{grid-template-columns:1fr 1fr}.mobile-more-grid button{padding:9px;font-size:11px}.mobile-nav-item span{font-size:9px!important}}
 @media(min-width:861px){.mobile-more-panel,.mobile-more-backdrop{display:none!important}}
+
+/* v8.5 – stato attivo e accessibilità del menu */
+@media(max-width:860px){.mobile-nav-item,.mobile-create{touch-action:manipulation}.mobile-more-grid button{min-height:54px;line-height:1.35}.mobile-more-grid button:focus-visible,.mobile-nav button:focus-visible,.mobile-more-title button:focus-visible{outline:3px solid #1384ad;outline-offset:2px}.mobile-more-trigger.active{background:rgba(46,230,199,.10)!important}.mobile-more-panel{overscroll-behavior:contain}}

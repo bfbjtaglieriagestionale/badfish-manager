@@ -96,3 +96,70 @@ label { line-height:1.4; }
   .detail-drawer { width:100vw!important; }
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }}
+
+
+/* PASSAGGIO 2: ordine visivo e leggibilita, solo CSS, senza funzioni o script. */
+:root{--bf-focus:#3269d7;--bf-surface:#fff;--bf-muted-bg:#f7f9fd}
+/* Barre strumenti: filtro e ricerca sempre riconoscibili */
+.filter-bar,.bf-archive-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--bf-surface)!important;border:1px solid #e2e9f1;border-radius:16px;padding:14px!important;margin-bottom:18px;box-shadow:0 4px 16px rgba(18,40,70,.035)}
+.filter-bar .search-field,.bf-archive-tools .search-field{flex:1 1 260px;min-width:0}
+.search-field{background:#f8faff!important;border:1px solid #d5e0ef!important;border-radius:11px!important;min-height:46px;display:flex;align-items:center;gap:9px;padding:0 12px}
+.search-field input{background:transparent!important;border:0!important;box-shadow:none!important;min-height:38px!important;width:100%;outline:0!important}
+.search-field:focus-within{border-color:#4b78d7!important;box-shadow:0 0 0 3px rgba(50,105,215,.13)}
+.filter-bar select,.bf-archive-tools select{max-width:100%;min-height:46px;padding:0 12px}
+/* Elenchi: separazione e informazioni leggibili */
+.file-row,.archive-row,.bf-client-list-row,.bf-client-order,.bf-quote-entry{transition:background-color .14s,border-color .14s;scroll-margin-block:16px}
+.file-row,.archive-row{padding:14px!important;gap:12px}
+.file-row:hover,.archive-row:hover{background:#f4f8fe!important}
+.file-pill{white-space:nowrap}
+.file-actions,.job-actions,.bf-quote-actions,.bf-client-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.bf-file-group{background:#fff;border:1px solid #e3eaf4;border-radius:16px;padding:12px;margin-bottom:14px}
+.bf-file-group-title{color:#203c60!important;font-weight:750}
+.bf-client-list-row:focus-within,.bf-quote-entry:focus-within,.archive-row:focus-within{outline:2px solid #85ace6;outline-offset:2px}
+/* Dettaglio cliente: rendere evidente scheda e informazioni */
+.bf-client-layout,.bf-quote-layout{align-items:start}
+.bf-client-left,.bf-client-right,.bf-quote-list,.bf-quote-editor{background:#fff!important;border:1px solid #e0e8f1;border-radius:18px!important;box-shadow:0 5px 18px rgba(23,50,79,.045)}
+.bf-client-detail-head,.bf-quote-head{gap:14px;flex-wrap:wrap}
+.bf-client-metrics{gap:10px}
+.bf-client-metrics>div{padding:15px!important;background:#f7faff!important;box-shadow:none!important}
+.bf-client-orders{margin-top:12px}
+.bf-client-delete,.bf-quote-remove{color:#a82c45!important}
+/* Editor preventivi: righe piu leggibili, totali in evidenza */
+.bf-quote-fields,.bf-client-form,.bf-inline-form,.form-grid{row-gap:14px!important}
+.bf-quote-line{border-radius:12px!important;padding:14px!important;gap:11px!important}
+.bf-quote-total{background:#f1f5fd;border-radius:12px;padding:17px!important;border:1px solid #dbe5f5}
+.bf-quote-internal{background:#f9fbff!important;border-radius:14px;padding:16px!important}
+.field-label{font-weight:680!important;color:#43566d!important}
+input::placeholder,textarea::placeholder{color:#8594a8;opacity:1}
+/* Calendario e note senza elementi sacrificati */
+.bf-planner-layout{gap:20px!important;align-items:start}
+.bf-planner-calendar{overflow-x:auto;max-width:100%}
+.bf-day{min-width:0;transition:background .14s,box-shadow .14s}
+.bf-day:hover{box-shadow:inset 0 0 0 1px #9fbceb}
+.bf-note-card{border:1px solid #e3e9f3!important;padding:17px!important}
+/* Modali: titoli, footer e scrolling utilizzabili */
+.modal-backdrop{padding:18px!important}
+.modal,.job-modal{max-height:calc(100dvh - 36px);overflow-y:auto;overscroll-behavior:contain}
+.modal-head{background:#fff;z-index:2}
+.modal-actions{gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.detail-drawer{max-width:100vw;overflow-y:auto}
+/* Ridurre le sorprese quando i testi sono lunghi */
+.panel,.job-card,.bf-client-left,.bf-client-right,.bf-quote-list,.bf-quote-editor{min-width:0}
+.job-article,.job-client,.archive-name,.file-info,.bf-quote-entry{overflow-wrap:anywhere}
+/* Focus da tastiera e controlli tattili */
+.nav-item:focus-visible,.mobile-nav-item:focus-visible,.btn:focus-visible,.quick-row:focus-visible{outline:3px solid #93baff!important;outline-offset:2px}
+a{ text-underline-offset:3px }
+@media(max-width:960px){.bf-client-layout,.bf-quote-layout,.bf-planner-layout{gap:14px!important}}
+@media(max-width:720px){
+  .filter-bar,.bf-archive-tools{padding:12px!important;gap:9px}
+  .filter-bar>*{flex:1 1 100%;width:100%;max-width:none}
+  .filter-bar .search-field{flex-basis:100%}
+  .bf-client-left,.bf-client-right,.bf-quote-list,.bf-quote-editor{padding:15px!important}
+  .bf-quote-line{padding:12px!important}
+  .modal-backdrop{padding:8px!important}
+  .modal,.job-modal{max-height:calc(100dvh - 16px)}
+  .modal-actions>.btn{flex:1 1 auto;justify-content:center}
+  .bf-client-detail-head,.bf-quote-head{align-items:flex-start}
+  .file-actions,.job-actions{gap:6px}
+}
+@media(max-width:400px){.content-shell{padding-inline:10px!important}.bf-quote-total{padding:13px!important}.btn{padding-inline:12px!important}}

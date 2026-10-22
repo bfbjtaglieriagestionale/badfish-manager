@@ -1,7 +1,7 @@
-const CACHE='badfish-manager-v72';
+const CACHE='badfish-manager-v73';
 const SHELL=[
-  './','./index.html','./styles-v65.css?v=72','./config.js?v=62','./boot-v62.js','./drive-v62.js','./app-v65.js?v=72',
-  './manifest.webmanifest?v=72','./assets/badfish-logo.png?v=64','./assets/icon-192.png?v=64',
+  './','./index.html','./styles-v65.css?v=73','./config.js?v=62','./boot-v62.js','./drive-v62.js','./app-v65.js?v=73',
+  './manifest.webmanifest?v=73','./assets/badfish-logo.png?v=64','./assets/icon-192.png?v=64',
   './assets/icon-512.png','./assets/apple-touch-icon.png?v=64','./assets/favicon-32.png?v=64'
 ];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));

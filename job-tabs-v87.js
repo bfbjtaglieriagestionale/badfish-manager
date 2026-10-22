@@ -1,6 +1,7 @@
 /* Badfish v8.7 — solo organizzazione della scheda commessa; non modifica i dati. */
 (() => {
   'use strict';
+  let lastTab = 'files';
   function enhance() {
     const root = document.getElementById('detailContent');
     if (!root || !root.querySelector('.detail-shell') || root.querySelector('.bf87-tabs')) return;
@@ -33,7 +34,7 @@
       pane.setAttribute('role','tabpanel'); pane.setAttribute('aria-labelledby',b.id);
       pane.hidden=i!==0;
       group.appendChild(pane);panes[key]=pane;
-      b.addEventListener('click',()=>activate(key));
+      b.addEventListener('click',()=>{lastTab=key;activate(key);});
       b.addEventListener('keydown',event=>{
         if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
         event.preventDefault();
@@ -61,6 +62,7 @@
     oldNav.replaceWith(nav);
     nav.after(group);
     work.remove();fileGrid.remove();
+    activate(lastTab);
   }
   const previous=window.bf87Enhance;
   window.bf87Enhance=enhance;

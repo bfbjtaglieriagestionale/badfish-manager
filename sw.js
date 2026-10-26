@@ -1,15 +1,15 @@
-const CACHE = "badfish-manager-v90";
+const CACHE = "badfish-manager-v91";
 const SHELL = [
   "./",
   "./index.html",
   "./sw.js",
-  "./manifest.webmanifest?v=72",
-  "./assets/favicon-32.png?v=62",
-  "./assets/apple-touch-icon.png?v=62",
+  "./manifest.webmanifest?v=91",
+  "./assets/favicon-32.png?v=91",
+  "./assets/apple-touch-icon.png?v=91",
   "./config.js?v=62",
-  "./styles.css?v=90",
-  "./assets/icon-192.png?v=62",
-  "./assets/badfish-logo.png?v=62",
+  "./styles.css?v=91",
+  "./assets/icon-192.png?v=91",
+  "./assets/badfish-logo.png?v=91",
   "./drive.js?v=90",
   "./qr-engine.js?v=75",
   "./vendor/fflate-0.8.2.js",
@@ -20,7 +20,8 @@ const SHELL = [
   "./stats.js?v=80",
   "./mobile-nav.js?v=85",
   "./job-tabs.js?v=90",
-  "./assets/icon-512.png",
+  "./assets/icon-512.png?v=91",
+  "./assets/icon-maskable-512.png?v=91",
 ];
 self.addEventListener("install", (event) =>
   event.waitUntil(

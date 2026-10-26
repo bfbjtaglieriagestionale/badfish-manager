@@ -5264,3 +5264,7 @@ a {
 .bf-nc-number strong {
   overflow-wrap: anywhere;
 }
+
+/* Logo BFBJ: proportions preserved on the original white background. */
+.brand img, .mobile-top-icon, .onboarding-mark img { object-fit: contain; background: #fff; }
+.welcome-visual img { width: 200px; height: 200px; max-height: 200px; object-fit: contain; border-radius: 18px; filter: none; background: #fff; }

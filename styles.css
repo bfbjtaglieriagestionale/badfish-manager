@@ -5268,3 +5268,42 @@ a {
 /* Logo BFBJ: proportions preserved on the original white background. */
 .brand img, .mobile-top-icon, .onboarding-mark img { object-fit: contain; background: #fff; }
 .welcome-visual img { width: 200px; height: 200px; max-height: 200px; object-fit: contain; border-radius: 18px; filter: none; background: #fff; }
+
+/* Statistiche v92: periodo, confronti e dettaglio leggibile su mobile. */
+#statsView .bf92-filters{padding:18px;background:#fff;border:1px solid #dfe5ed;border-radius:15px;align-items:end;gap:12px}
+#statsView .bf92-filters label{flex:1;min-width:130px}
+#statsView .bf92-filters select{width:100%;min-width:0;color:#142b46;min-height:44px}
+.bf92-period{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:24px 0 18px;color:#64748b;font-size:13px}
+.bf92-period h3{font-size:24px;color:#142b46;margin:4px 0 8px}
+.bf92-current{padding:12px 16px;background:#edf3f7;border-radius:12px;color:#30465e;max-width:310px}
+.bf92-current strong{font-size:21px;margin-right:4px}
+.bf92-current small{display:block;margin-top:4px;line-height:1.5;color:#64748b}
+.bf92-empty{padding:14px 16px;background:#f3f6f9;border-radius:10px;color:#64748b;font-size:14px;line-height:1.5}
+.bf92-chart-scroll,.bf92-table-scroll{overflow-x:auto;max-width:100%;padding-bottom:6px}
+#statsView .bf80-panels>*{min-width:0}
+#statsView .bf80-bars{min-width:300px}
+#statsView .bf92-daily{grid-auto-flow:column;grid-auto-columns:minmax(16px,1fr);grid-template-columns:none;min-width:620px;gap:4px}
+.bf92-client{margin-bottom:13px}
+.bf92-client .bf80-client{border:0;padding:9px 0;align-items:baseline}
+.bf92-client .bf80-client span{overflow-wrap:anywhere;min-width:0}
+.bf92-client strong{white-space:nowrap}
+.bf92-client strong small{font-weight:400;color:#64748b;margin-left:6px;font-size:12px}
+.bf92-client-track{height:5px;background:#edf2f7;border-radius:5px;overflow:hidden}
+.bf92-client-track span{display:block;height:100%;background:#2d6fa8;border-radius:5px}
+.bf92-margin{color:#142b46;font-weight:650}
+.bf92-statuses{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.bf92-statuses>span{background:#edf3f7;color:#425873;padding:6px 10px;border-radius:8px;font-size:12px}
+.bf92-statuses b{margin-left:5px}
+.bf92-detail{margin-bottom:18px}
+.bf92-detail summary,.bf92-method summary{cursor:pointer;font-size:14px;font-weight:650;color:#30465e;padding:5px 0;min-height:30px}
+.bf92-table{width:100%;min-width:550px;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.bf92-table caption{text-align:left;padding:18px 0 12px;color:#64748b}
+.bf92-table td,.bf92-table th{padding:12px 10px;text-align:right;border-bottom:1px solid #e6ebf1}
+.bf92-table th:first-child{text-align:left}
+.bf92-table thead,.bf92-table tfoot{background:#f3f6f9;color:#30465e}
+.bf92-table tbody th{font-weight:500}
+.bf92-method{margin:18px 0 30px}
+#statsView :is(select,button,summary):focus-visible{outline:3px solid #2d6fa8;outline-offset:3px}
+@media(max-width:550px){.bf92-period{align-items:stretch;flex-direction:column}.bf92-current{max-width:none}#statsView .bf92-filters{padding:13px}#statsView .bf92-filters label{min-width:calc(50% - 12px)}#statsView .bf92-filters label:nth-child(3){flex-basis:100%}.bf92-filters button{width:100%}#statsView .bf80-bars{min-width:280px}.bf92-period h3{font-size:22px}}
+
+.bf92-scroll-hint{display:block;color:#64748b;font-size:11px;margin-top:8px}

@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="./styles.css?v=92" />
     <link rel="stylesheet" href="./atelier-v93.css?v=93" />
     <link rel="stylesheet" href="./mobile-v94.css?v=94" />
+    <link rel="stylesheet" href="./repeat-jobs.css?v=95" />
   </head>
   <body>
     <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -193,7 +194,7 @@
             <svg><use href="#i-refresh" /></svg> Sincronizza
           </button>
         </div>
-        <div class="sidebar-version">BFBJ · Gestionale <b>v9.4</b></div>
+        <div class="sidebar-version">BFBJ · Gestionale <b>v9.5</b></div>
       </aside>
 
       <main class="main-shell">
@@ -825,12 +826,13 @@
         <div class="modal-head">
           <div>
             <span class="eyebrow">NUOVO LAVORO</span>
-            <h2>Crea commessa</h2>
+            <h2 id="bf95JobHeading">Crea commessa</h2>
           </div>
           <button class="icon-btn" id="closeModalBtn" aria-label="Chiudi">
             <svg><use href="#i-x" /></svg>
           </button>
         </div>
+        <p id="bf95RepeatInfo" hidden></p>
         <form id="jobForm">
           <div class="form-grid">
             <label class="field-label"
@@ -897,12 +899,13 @@
     <input id="hiddenFileInput" class="hidden" type="file" multiple />
     <div id="toast" class="toast hidden" role="status"></div>
 
-    <script src="./drive.js?v=90"></script>
+    <script src="./drive.js?v=95"></script>
     <script src="./qr-engine.js?v=75"></script>
     <script src="./vendor/fflate-0.8.2.js"></script>
     <script src="./vendor/fzstd-0.1.1.js"></script>
     <script src="./fusion-stock.js?v=90"></script>
-    <script src="./app.js?v=94"></script>
+    <script src="./repeat-jobs.js?v=95"></script>
+    <script src="./app.js?v=95"></script>
     <script src="./backup.js?v=78"></script>
     <script src="./stats.js?v=92"></script>
     <script src="./mobile-nav.js?v=94"></script>

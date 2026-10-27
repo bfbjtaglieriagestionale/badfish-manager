@@ -323,10 +323,10 @@
         .replace(/_+/g, "_")
         .replace(/[. ]+$/g, "")
         .slice(0, 120) || "Senza_nome";
-    const jobFolder = await ensureFolder(
-      `${clean(job.code)}_${clean(job.article)}`,
-      jobsRootId,
-    );
+    // A repeated job always owns a separate folder, even when sanitized names collide.
+    const folderName = `${clean(job.code)}_${clean(job.article)}` +
+      (job.repeatedFrom ? `__${clean(job.id)}` : "");
+    const jobFolder = await ensureFolder(folderName, jobsRootId);
     const fusion = await ensureFolder("01_FUSION", jobFolder.id);
     const fusionVersions = await ensureFolder("versioni", fusion.id);
     const step = await ensureFolder("02_STEP", jobFolder.id);
@@ -334,6 +334,21 @@
     const drawings = await ensureFolder("04_DISEGNI_PDF", jobFolder.id);
     const photos = await ensureFolder("05_FOTO", jobFolder.id);
     return { jobFolder, fusion, fusionVersions, step, nc, drawings, photos };
+  }
+
+  // Recover a completed copy after a lost response, using a stable per-file marker.
+  async function copyJobFile(file, folders) {
+    const target = folders[file.category];
+    if (!target?.id || !file.repeatCopyFromDriveId || !file.id)
+      throw new Error("File o cartella di destinazione non validi.");
+    const marker = escQ(file.id);
+    const existing = await list(`'${escQ(target.id)}' in parents and trashed=false and appProperties has { key='badfishRepeatFile' and value='${marker}' }`);
+    if (existing.files?.length) return existing.files[0];
+    return api(`/files/${encodeURIComponent(file.repeatCopyFromDriveId)}/copy?fields=id,name,mimeType,size&supportsAllDrives=true`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: file.name, parents: [target.id], appProperties: { badfishRepeatFile: file.id } }),
+    });
   }
 
   async function uploadJobFile(file, category, folders) {
@@ -371,6 +386,7 @@
     ensureRootStructure,
     ensureJobStructure,
     uploadJobFile,
+    copyJobFile,
     downloadJson,
     downloadBinary,
     updateMedia,

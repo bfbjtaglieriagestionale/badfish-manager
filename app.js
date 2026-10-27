@@ -553,7 +553,7 @@ function renderFiles() {
   if (counter)
     counter.textContent = `${filtered.length} file su ${files.length}`;
   const row = (f) =>
-    `<div class="archive-row"><div class="archive-icon">${esc(CATEGORY_SHORT[f.category] || "FILE")}</div><div class="archive-name"><strong title="${esc(f.name)}">${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatDate(f.addedAt)} · ${esc(f.jobClient || "Cliente non indicato")}</span></div><button class="archive-job" data-open="${esc(f.jobId)}" title="Apri commessa"><strong>${esc(f.jobCode)}</strong><span>${esc(f.jobArticle)}</span></button><div class="archive-size">${formatSize(f.size)}</div><button class="archive-open" data-drive-open="${esc(f.driveFileId || "")}" aria-label="Apri su Drive" title="Apri su Drive" ${f.driveFileId ? "" : "disabled"}>${icon("external")}</button></div>`;
+    `<div class="archive-row"><div class="archive-icon">${esc(CATEGORY_SHORT[f.category] || "FILE")}</div><div class="archive-name"><strong title="${esc(f.name)}">${esc(f.name)}</strong><span>${categoryLabel(f.category)}${f.repeatCopyFromDriveId && !f.driveFileId ? " · Copia in attesa" : ""} · ${formatDate(f.addedAt)} · ${esc(f.jobClient || "Cliente non indicato")}</span></div><button class="archive-job" data-open="${esc(f.jobId)}" title="Apri commessa"><strong>${esc(f.jobCode)}</strong><span>${esc(f.jobArticle)}</span></button><div class="archive-size">${formatSize(f.size)}</div><button class="archive-open" data-drive-open="${esc(f.driveFileId || "")}" aria-label="Apri su Drive" title="Apri su Drive" ${f.driveFileId ? "" : "disabled"}>${icon("external")}</button></div>`;
   if (!filtered.length) {
     $("#allFilesList").innerHTML =
       '<div class="empty">Nessun file trovato. Prova a cambiare filtri o ricerca, oppure apri una commessa per aggiungere file.</div>';
@@ -588,6 +588,7 @@ function renderFiles() {
 }
 
 function openNewJob() {
+  window.BadfishRepeats?.resetForm();
   const form = $("#jobForm");
   form.reset();
   form.elements.quantity.value = 1;
@@ -598,8 +599,11 @@ function openNewJob() {
 }
 function closeNewJob() {
   $("#modalBackdrop").classList.add("hidden");
+  window.BadfishRepeats?.resetForm();
 }
 function fileButtons(f) {
+  if (f.repeatCopyFromDriveId && !f.driveFileId)
+    return `<span class="bf95-pending-file">Copia in attesa</span><button data-file-remove="${esc(f.id)}" aria-label="Rimuovi file da copiare">×</button>`;
   return `<button data-drive-open="${esc(f.driveFileId || "")}">Apri Drive</button><button data-file-remove="${esc(f.id)}" aria-label="Elimina file">×</button>`;
 }
 // Commessa: grezzi configurati in Fusion e registro ore.
@@ -615,7 +619,7 @@ function openDetail(id) {
   if (!j) return;
   const files = j.files || [];
   $("#detailContent").innerHTML =
-    `<div class="detail-shell"><div class="bf94-mobile-detail-bar"><span class="eyebrow" title="${esc(j.code)}">COMMESSA ${esc(j.code)}</span><button type="button" class="icon-btn bf94-mobile-close" data-close-detail aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section" id="bf77-status"><h4>Lavorazione e note</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
+    `<div class="detail-shell"><div class="bf94-mobile-detail-bar"><span class="eyebrow" title="${esc(j.code)}">COMMESSA ${esc(j.code)}</span><button type="button" class="icon-btn bf94-mobile-close" data-close-detail aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div>${window.BadfishRepeats?.panel(j) || ""}<div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section" id="bf77-status"><h4>Lavorazione e note</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
   const closeBtn = $("#closeDetail");
   if (closeBtn) {
     closeBtn.addEventListener(
@@ -704,7 +708,8 @@ async function syncDrive(showToast = false) {
       db.settings.rememberGoogleAccount = true;
     }
     for (const job of db.jobs) {
-      if (!job.driveFolderId) {
+      const pendingCopies = window.BadfishRepeats?.pending(job).length;
+      if (!job.driveFolderId || pendingCopies) {
         const folders = await BadfishDrive.ensureJobStructure(
           job,
           driveRefs.jobs.id,
@@ -712,6 +717,7 @@ async function syncDrive(showToast = false) {
         job.driveFolderId = folders.jobFolder.id;
         job.driveFolderUrl = BadfishDrive.folderUrl(folders.jobFolder.id);
         job.updatedAt = now();
+        if (pendingCopies) await window.BadfishRepeats.copyPending(job, folders);
       }
     }
     db.meta.updatedAt = now();
@@ -1367,7 +1373,9 @@ function initEvents() {
       if (!job || !file) return;
       if (
         !confirm(
-          `Rimuovere ${file.name}? Il file verrà eliminato anche da Google Drive.`,
+          file.repeatCopyFromDriveId && !file.driveFileId
+            ? `Rimuovere ${file.name} dai file da copiare? Il file originale resta nella lavorazione precedente.`
+            : `Rimuovere ${file.name}? Il file verrà eliminato anche da Google Drive.`,
         )
       )
         return;
@@ -1419,7 +1427,7 @@ function initEvents() {
       )
     )
       return toast("Esiste già una commessa con questo codice.", true);
-    const job = {
+    let job = {
       id: `job_${Date.now()}_${Math.random().toString(16).slice(2)}`,
       code: String(payload.code).trim(),
       client: String(payload.client).trim(),
@@ -1434,10 +1442,13 @@ function initEvents() {
       updatedAt: now(),
       files: [],
     };
+    try { job = window.BadfishRepeats?.build(job) || job; }
+    catch (error) { toast(error.message, true); return; }
     db.jobs.unshift(job);
     closeNewJob();
     openDetail(job.id);
-    await saveAndSync("Commessa creata.");
+    await saveAndSync(job.repeatedFrom ? "Nuova lavorazione creata." : "Commessa creata.");
+    if (job.repeatedFrom && selectedJobId === job.id) openDetail(job.id);
   });
   const doConnect = () => connectDrive({ silent: false });
   $("#connectDriveBtn").addEventListener("click", doConnect);

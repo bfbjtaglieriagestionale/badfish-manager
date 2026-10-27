@@ -340,7 +340,9 @@ function showGoogleEmailSetup() {
     ? "Modifica l’account Google che Badfish deve usare come archivio Drive."
     : "Inserisci l’account Google dedicato alla web app. Lo salvi una volta e Badfish lo userà come account preferito per Drive.";
   $("#accountSetupBackdrop").classList.remove("hidden");
-  setTimeout(() => $("#googleAccountEmail")?.focus(), 80);
+  setTimeout(() => {
+    if (!$("#accountSetupBackdrop").classList.contains("hidden")) $("#googleAccountEmail")?.focus();
+  }, 80);
 }
 function hideGoogleEmailSetup() {
   $("#accountSetupBackdrop").classList.add("hidden");
@@ -406,7 +408,7 @@ function switchView(view) {
   if (view === "quotes") bfRenderQuotes();
   if (view === "stats" && typeof bf80RenderStats === "function")
     bf80RenderStats();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: window.matchMedia("(max-width: 860px)").matches ? "instant" : "smooth" });
 }
 
 function render() {
@@ -590,7 +592,9 @@ function openNewJob() {
   form.reset();
   form.elements.quantity.value = 1;
   $("#modalBackdrop").classList.remove("hidden");
-  setTimeout(() => form.elements.code?.focus(), 100);
+  setTimeout(() => {
+    if (!$("#modalBackdrop").classList.contains("hidden")) form.elements.code?.focus();
+  }, 100);
 }
 function closeNewJob() {
   $("#modalBackdrop").classList.add("hidden");
@@ -604,12 +608,14 @@ function bfWorkPanel(j) {
 }
 
 function openDetail(id) {
+  const drawer = $("#detailModal");
+  const scrollTop = selectedJobId === id ? drawer.scrollTop : 0;
   selectedJobId = id;
   const j = db.jobs.find((x) => x.id === id);
   if (!j) return;
   const files = j.files || [];
   $("#detailContent").innerHTML =
-    `<div class="detail-shell"><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section" id="bf77-status"><h4>Lavorazione e note</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
+    `<div class="detail-shell"><div class="bf94-mobile-detail-bar"><span class="eyebrow" title="${esc(j.code)}">COMMESSA ${esc(j.code)}</span><button type="button" class="icon-btn bf94-mobile-close" data-close-detail aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section" id="bf77-status"><h4>Lavorazione e note</h4><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
   const closeBtn = $("#closeDetail");
   if (closeBtn) {
     closeBtn.addEventListener(
@@ -623,6 +629,8 @@ function openDetail(id) {
     );
   }
   $("#detailBackdrop").classList.remove("hidden");
+  window.bf87Enhance?.();
+  drawer.scrollTop = scrollTop;
 }
 function closeDetail() {
   $("#detailBackdrop").classList.add("hidden");
@@ -791,14 +799,14 @@ async function uploadFiles(files, category) {
   }
   job.updatedAt = now();
   await saveAndSync(`${count} file caricati.`);
-  openDetail(job.id);
+  if (selectedJobId === job.id) openDetail(job.id);
 }
 
 // v7.1 - planning, knowledge base, and complete work hour totals.
 const bfHoursTotal = () =>
   db.jobs.reduce(
     (sum, j) =>
-      sum + bfSessionSeconds(j) + (j.timerStartedAt ? bfRunningSeconds(j) : 0),
+      sum + bfSessionSeconds(j) + bfRunningSeconds(j),
     0,
   );
 const bfHumanHours = (secs) =>
@@ -1178,8 +1186,14 @@ function bfClientDetail(c, jobs) {
       : '<div class="empty">Nessun ordine associato.</div>'
   }<button class="btn primary" id="bfClientNewJob">+ Nuova commessa per questo cliente</button>`;
 }
+function bfRevealOnMobile(selector) {
+  if (!window.matchMedia("(max-width: 860px)").matches) return;
+  requestAnimationFrame(() => $(selector)?.scrollIntoView({ block: "start", behavior: "instant" }));
+}
+
 function bfClientEditor(client) {
   const root = $("#bfClients");
+  bfRevealOnMobile(".bf-client-right");
   root.dataset.editing = client?.id || "";
   root.querySelector(".bf-client-right").innerHTML =
     `<h2>${client ? "Modifica cliente" : "Nuovo cliente"}</h2><form id="bfClientForm" class="bf-client-form"><label>Nome o ragione sociale *<input name="name" required maxlength="150" value="${esc(client?.name || "")}"></label><label>Email<input name="email" type="email" value="${esc(client?.email || "")}"></label><label>Telefono<input name="phone" value="${esc(client?.phone || "")}"></label><label>Note<textarea name="notes" rows="4">${esc(client?.notes || "")}</textarea></label><div class="bf-client-actions"><button class="btn primary" type="submit">Salva cliente</button><button class="btn subtle" type="button" id="bfCancelClient">Annulla</button></div></form>`;
@@ -1191,6 +1205,7 @@ document.addEventListener("click", (e) => {
   if (row) {
     root.dataset.selected = row.dataset.bfClient;
     bfRenderClients();
+    bfRevealOnMobile(".bf-client-right");
     return;
   }
   if (e.target.closest("#bfNewClient")) {
@@ -1364,7 +1379,7 @@ function initEvents() {
         job.files = job.files.filter((f) => f.id !== file.id);
         job.updatedAt = now();
         await saveAndSync("File eliminato.");
-        openDetail(job.id);
+        if (selectedJobId === job.id) openDetail(job.id);
       } catch (err) {
         toast(err.message, true);
       }
@@ -1421,8 +1436,8 @@ function initEvents() {
     };
     db.jobs.unshift(job);
     closeNewJob();
-    await saveAndSync("Commessa creata.");
     openDetail(job.id);
+    await saveAndSync("Commessa creata.");
   });
   const doConnect = () => connectDrive({ silent: false });
   $("#connectDriveBtn").addEventListener("click", doConnect);
@@ -1509,7 +1524,7 @@ function initEvents() {
     await saveAndSync("Impostazioni salvate.");
   });
   document.addEventListener("click", async (e) => {
-    if (e.target.closest("#closeDetail")) closeDetail();
+    if (e.target.closest("#closeDetail,[data-close-detail]")) closeDetail();
     if (e.target.closest("#openDriveFolderBtn")) {
       const job = db.jobs.find((j) => j.id === selectedJobId);
       if (job?.driveFolderId)
@@ -1527,7 +1542,7 @@ function initEvents() {
       job.notes = $("#detailNotes").value;
       job.updatedAt = now();
       await saveAndSync("Commessa aggiornata.");
-      openDetail(job.id);
+      if (selectedJobId === job.id) openDetail(job.id);
     }
     if (e.target.closest("#deleteJobBtn")) {
       const job = db.jobs.find((j) => j.id === selectedJobId);
@@ -1604,7 +1619,7 @@ function initEvents() {
     }
     j.updatedAt = now();
     await saveAndSync("Lavorazione aggiornata.");
-    openDetail(j.id);
+    if (selectedJobId === j.id) openDetail(j.id);
   });
   document.addEventListener("click", async (e) => {
     const add = e.target.closest("#bfAddRawPiece"),
@@ -1692,8 +1707,14 @@ function initEvents() {
     const job = db.jobs.find((j) => j.id === selectedJobId),
       piece = job?.rawPieces?.find((p) => p.id === id);
     if (!piece) return;
-    if (e.target.dataset.pieceTitle)
+    if (e.target.dataset.pieceTitle) {
       piece.title = e.target.value.trim().slice(0, 160) || "Senza titolo";
+      const heading = e.target.closest(".bf-piece-card")?.querySelector("h4");
+      if (heading) heading.textContent = piece.title;
+      job.updatedAt = now();
+      await saveAndSync("Titolo del pezzo salvato.");
+      return;
+    }
     if (e.target.dataset.pieceFile) {
       bfStockReads.set(piece, {});
       piece.fusionFileId = e.target.value;
@@ -1750,7 +1771,7 @@ function initEvents() {
     );
     job.updatedAt = now();
     await saveAndSync("Sessione eliminata.");
-    openDetail(job.id);
+    if (selectedJobId === job.id) openDetail(job.id);
   });
   window.setInterval(() => {
     if (!selectedJobId) return;
@@ -1929,6 +1950,8 @@ function bfRenderQuotes() {
   const q = bfEditingQuoteId
     ? all.find((x) => x.id === bfEditingQuoteId)
     : null;
+  const keepCostsOpen = root.dataset.quoteId === q?.id && root.querySelector(".bf-quote-internal")?.open;
+  root.dataset.quoteId = q?.id || "";
   root.innerHTML = `<div class="bf-quote-head"><button class="btn primary" id="bfQuoteNew">+ Nuovo preventivo</button><p class="bf-help">Crea un preventivo libero. Cliente e commessa sono facoltativi; descrizioni e importi sono scritti da te.</p></div><div class="bf-quote-layout"><article class="panel bf-quote-list"><h3>Preventivi salvati <small>(${all.length})</small></h3>${all.map((x) => `<button type="button" class="bf-quote-entry ${q?.id === x.id ? "selected" : ""}" data-bf-open-quote="${bfQuoteEscape(x.id)}"><strong>${bfQuoteEscape(x.number)}</strong><span>${bfQuoteEscape(x.customer || "Cliente da definire")}</span><small>${bfQuoteEscape(x.subject || "Nessun oggetto")} · ${bfEuro(bfQuoteSum(x))}</small><small>${bfQuoteEscape(x.status || "Bozza")}</small></button>`).join("") || '<p class="bf-help">Nessun preventivo. Premi “Nuovo preventivo”.</p>'}${
     db.jobs.filter((j) => j.estimate).length
       ? `<div class="bf-quote-old"><b>Preventivi precedenti</b><p>Quelli salvati dentro le commesse non vengono cancellati.</p>${db.jobs
@@ -1940,6 +1963,8 @@ function bfRenderQuotes() {
           .join("")}</div>`
       : ""
   }</article><article class="panel bf-quote-editor">${q ? bfQuoteForm(q) : '<div class="bf-quote-empty"><h3>Il tuo spazio preventivi</h3><p>Apri un documento o creane uno. Puoi scrivere liberamente cosa stai proponendo, aggiungere righe e definire il prezzo.</p></div>'}</article></div>`;
+  if (keepCostsOpen && root.querySelector(".bf-quote-internal"))
+    root.querySelector(".bf-quote-internal").open = true;
 }
 function bfQuoteForm(q) {
   return `<form id="bfQuoteIndependentForm" autocomplete="off"><div class="bf-heading-row"><h3>Modifica preventivo</h3><span class="bf-tag">${bfQuoteEscape(q.status)}</span></div><div class="bf-quote-fields"><label>Numero preventivo<input name="number" required maxlength="70" value="${bfQuoteEscape(q.number)}"></label><label>Data<input name="date" type="date" value="${bfQuoteEscape(q.date)}"></label><label>Cliente / destinatario<input name="customer" placeholder="Scrivi liberamente il destinatario" value="${bfQuoteEscape(q.customer)}"></label><label>Stato<select name="status">${["Bozza", "Inviato", "Accettato", "Rifiutato"].map((v) => `<option ${q.status === v ? "selected" : ""}>${v}</option>`).join("")}</select></label><label class="bf-span-all">Oggetto o titolo<input name="subject" placeholder="Esempio: Taglio di pietre su misura" value="${bfQuoteEscape(q.subject)}"></label><label class="bf-span-all">Commessa associata (facoltativa)<select name="jobId"><option value="">Nessuna commessa: preventivo indipendente</option>${db.jobs.map((j) => `<option value="${bfQuoteEscape(j.id)}" ${q.jobId === j.id ? "selected" : ""}>${bfQuoteEscape(j.code)} · ${bfQuoteEscape(j.article)}</option>`).join("")}</select></label><label>Validità fino al<input type="date" name="validUntil" value="${bfQuoteEscape(q.validUntil)}"></label><label class="bf-span-all">Presentazione / descrizione libera<textarea name="intro" rows="3" placeholder="Descrivi il lavoro come preferisci">${bfQuoteEscape(q.intro)}</textarea></label></div><div class="bf77-template-wrap"><label>Modello rapido<select id="bf77QuoteTemplate"><option value="">Preventivo libero (nessun modello)</option><option value="taglio">Taglio pietra</option><option value="lucidatura">Lucidatura</option><option value="cnc">Lavorazione CNC</option></select></label><small>Il modello aggiunge una riga modificabile senza cancellare le tue descrizioni.</small></div><h4>Voci del preventivo</h4><p class="bf-help">Aggiungi tutti gli articoli o servizi che vuoi, con quantità e importo unitario.</p><div class="bf-quote-items">${(q.items || []).map((it, i) => bfQuoteRow(it, i)).join("")}</div><button type="button" class="btn subtle" id="bfQuoteAddRow">+ Aggiungi riga</button><div class="bf-quote-total">Totale preventivo: <strong id="bfQuoteLiveTotal">${bfEuro(bfQuoteSum(q))}</strong></div><div class="bf-quote-fields"><label class="bf-span-all">Note per il cliente<textarea name="notes" rows="3">${bfQuoteEscape(q.notes)}</textarea></label><label class="bf-span-all">Condizioni / pagamenti<textarea name="conditions" rows="3">${bfQuoteEscape(q.conditions)}</textarea></label></div><details class="bf-quote-internal"><summary>Calcolo costi interni (non visibili nel PDF cliente)</summary><div class="bf-quote-fields">${[
@@ -2061,11 +2086,13 @@ document.addEventListener("click", async (e) => {
     bfEditingQuoteId = q.id;
     await saveAndSync("Bozza preventivo creata.");
     bfRenderQuotes();
+    bfRevealOnMobile(".bf-quote-editor");
     return;
   }
   if (b.dataset.bfOpenQuote) {
     bfEditingQuoteId = b.dataset.bfOpenQuote;
     bfRenderQuotes();
+    bfRevealOnMobile(".bf-quote-editor");
     return;
   }
   if (b.dataset.bfImportJob) {
@@ -2109,6 +2136,9 @@ document.addEventListener("click", async (e) => {
     const old = db.quotes.find((x) => x.id === q.id);
     Object.assign(old, q);
     bfRenderQuotes();
+    const field = $(".bf-quote-line:last-child [data-qi=description]");
+    field?.focus({ preventScroll: true });
+    bfRevealOnMobile(".bf-quote-line:last-child");
     return;
   }
   if (b.classList.contains("bf-quote-remove")) {
@@ -2196,6 +2226,7 @@ function bootBadfish() {
         "notes",
         "clients",
         "quotes",
+        "stats",
       ].includes(requestedView)
         ? requestedView
         : "dashboard",

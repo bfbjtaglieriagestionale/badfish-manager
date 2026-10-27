@@ -11,6 +11,7 @@
     backdrop.hidden = !open;
     panel.setAttribute("aria-hidden", String(!open));
     trigger.setAttribute("aria-expanded", String(open));
+    window.bf94UpdateOverlays?.();
     if (open) close.focus();
     else if (returnFocus) trigger.focus();
   }

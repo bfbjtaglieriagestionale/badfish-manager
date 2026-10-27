@@ -102,7 +102,7 @@
   const root = document.getElementById("detailContent");
   if (root) {
     new MutationObserver(() => {
-      if (root.querySelector(".detail-shell:not(:has(.bf87-tabs))")) enhance();
+      if (root.querySelector(".detail-shell") && !root.querySelector(".bf87-tabs")) enhance();
     }).observe(root, { childList: true });
     enhance();
   }

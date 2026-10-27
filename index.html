@@ -42,6 +42,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="./styles.css?v=92" />
     <link rel="stylesheet" href="./atelier-v93.css?v=93" />
+    <link rel="stylesheet" href="./mobile-v94.css?v=94" />
   </head>
   <body>
     <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -192,7 +193,7 @@
             <svg><use href="#i-refresh" /></svg> Sincronizza
           </button>
         </div>
-        <div class="sidebar-version">BFBJ · Gestionale <b>v9.3</b></div>
+        <div class="sidebar-version">BFBJ · Gestionale <b>v9.4</b></div>
       </aside>
 
       <main class="main-shell">
@@ -709,6 +710,7 @@
 
       <div id="mobileMoreBackdrop" class="mobile-more-backdrop" hidden></div>
       <section
+        role="dialog" aria-modal="true"
         id="mobileMorePanel"
         class="mobile-more-panel"
         aria-label="Tutte le sezioni"
@@ -774,7 +776,7 @@
 
     <!-- Primo avvio -->
     <div id="accountSetupBackdrop" class="onboarding-backdrop hidden">
-      <div class="onboarding-card">
+      <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Account Google">
         <div class="onboarding-mark">
           <img src="./assets/icon-192.png?v=91" alt="BFBJ Taglieria Pietre" />
         </div>
@@ -819,7 +821,7 @@
 
     <!-- Nuova commessa -->
     <div id="modalBackdrop" class="modal-backdrop hidden">
-      <div id="jobModal" class="modal job-modal">
+      <div id="jobModal" class="modal job-modal" role="dialog" aria-modal="true" aria-label="Nuova commessa">
         <div class="modal-head">
           <div>
             <span class="eyebrow">NUOVO LAVORO</span>
@@ -887,7 +889,7 @@
 
     <!-- Dettaglio commessa -->
     <div id="detailBackdrop" class="modal-backdrop detail-backdrop hidden">
-      <div id="detailModal" class="detail-drawer">
+      <div id="detailModal" class="detail-drawer" role="dialog" aria-modal="true" aria-label="Scheda commessa">
         <div id="detailContent"></div>
       </div>
     </div>
@@ -900,10 +902,11 @@
     <script src="./vendor/fflate-0.8.2.js"></script>
     <script src="./vendor/fzstd-0.1.1.js"></script>
     <script src="./fusion-stock.js?v=90"></script>
-    <script src="./app.js?v=90"></script>
+    <script src="./app.js?v=94"></script>
     <script src="./backup.js?v=78"></script>
     <script src="./stats.js?v=92"></script>
-    <script src="./mobile-nav.js?v=85"></script>
-    <script src="./job-tabs.js?v=90"></script>
+    <script src="./mobile-nav.js?v=94"></script>
+    <script src="./job-tabs.js?v=94"></script>
+    <script src="./ui-v94.js?v=94"></script>
   </body>
 </html>

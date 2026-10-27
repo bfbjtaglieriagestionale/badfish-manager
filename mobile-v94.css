@@ -1,0 +1,136 @@
+/* Correzioni v94: geometria dei pannelli, aree sicure e contenuti mobili.
+   Le regole di stampa e l'identità Atelier rimangono indipendenti. */
+@media screen {
+:root {--bf-viewport-height:100dvh;--bf-viewport-top:0px;--bf-keyboard-inset:0px;}
+html.bf-overlay-open {overflow:hidden!important;scroll-behavior:auto!important;}
+html.bf-overlay-open body {position:fixed;top:var(--bf-scroll-top,0px);left:0;right:0;width:100%;overflow:hidden!important;}
+.bf94-mobile-detail-bar {display:none;}
+/* Il drawer deve entrare nello spazio disponibile, senza 100vw + padding. */
+#detailBackdrop {padding:0!important;align-items:stretch!important;justify-items:end;overflow:hidden;}
+#detailModal {width:min(1150px,100%)!important;max-width:100%!important;height:100%;min-height:0;border-radius:16px 0 0 16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+#modalBackdrop {z-index:110;overflow:hidden;}
+#accountSetupBackdrop {z-index:120;overflow:hidden;}
+.modal-backdrop,.onboarding-backdrop {inset:auto 0!important;top:var(--bf-viewport-top)!important;height:var(--bf-viewport-height);min-height:0;}
+#jobModal,.onboarding-card {min-height:0;max-height:calc(var(--bf-viewport-height) - 36px)!important;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+#mobileMorePanel {overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.bf77-preview-backdrop {top:var(--bf-viewport-top);bottom:auto;height:var(--bf-viewport-height);overscroll-behavior:contain;}
+.bf77-preview-paper {flex-shrink:0;min-width:0;height:fit-content;}
+#jobSearch,#fileSearch {border:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;min-width:0;}
+.bf-piece-card .bf-section-title h4,.bf-client-detail-head>div:first-child,.detail-title {min-width:0;overflow-wrap:anywhere;}
+.bf-quote-entry,.bf-client-list-row,.bf-client-order,.bf-home-task,.bf77-report-row {min-width:0;overflow-wrap:anywhere;}
+.bf-home-task span,.bf77-report-row>span,.bf-client-order>span {min-width:0;}
+.file-info strong,.archive-name strong {white-space:normal!important;overflow-wrap:anywhere;}
+.bf-client-right,.bf-quote-editor,.bf-quote-line {scroll-margin-top:110px;}
+.bf87-tabs {position:relative;}
+.toast.error {background:#843e37!important;border-color:#a76057!important;color:#fff!important;}
+@media(max-width:860px) {
+  :root {--bf-nav-bottom:max(10px,env(safe-area-inset-bottom));--bf-nav-height:70px;--topbar:74px;}
+  .topbar {height:calc(74px + env(safe-area-inset-top))!important;padding-top:calc(12px + env(safe-area-inset-top))!important;}
+  .topbar-copy {flex:1;min-width:0;}
+  .top-actions {flex:none;}
+  .mobile-top-icon {flex:none;}
+  .content-shell {padding-bottom:calc(var(--bf-nav-height) + var(--bf-nav-bottom) + 24px)!important;}
+  .mobile-nav {bottom:var(--bf-nav-bottom)!important;height:var(--bf-nav-height)!important;padding:6px!important;}
+  #mobileMorePanel {bottom:calc(var(--bf-nav-height) + var(--bf-nav-bottom) + 10px)!important;max-height:calc(var(--bf-viewport-height) - var(--bf-nav-height) - var(--bf-nav-bottom) - 32px);}
+  .bf-keyboard-open .mobile-nav,.bf-keyboard-open #mobileMorePanel,.bf-overlay-open .mobile-nav:where([inert]) {display:none!important;}
+  .bf-keyboard-open .toast {bottom:calc(var(--bf-keyboard-inset) + 12px)!important;}
+  #detailModal {width:100%!important;border:0!important;border-radius:0!important;animation:none!important;}
+  #detailModal .detail-shell {padding:calc(12px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom))!important;}
+  .detail-top {position:static;z-index:auto;margin:0 0 16px;padding:15px!important;}
+  .bf94-mobile-detail-bar {position:sticky;top:env(safe-area-inset-top);z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f5f4ef;padding:4px 0 12px;margin-bottom:0;}
+  .bf94-mobile-detail-bar>.eyebrow {flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bf94-mobile-close {flex:none;min-width:44px;min-height:44px;touch-action:manipulation;}
+  .bf94-mobile-close svg {pointer-events:none;}
+  #detailModal .detail-close-btn,#detailModal .detail-title>.eyebrow {display:none;}
+  .detail-title {flex:1;}
+  .detail-title h2 {font-size:22px!important;line-height:1.25;}
+  .detail-sub {overflow-wrap:anywhere;}
+  .detail-summary {gap:8px!important;}
+  .detail-summary>div {padding:12px!important;min-height:70px;}
+  .bf87-tabs {margin:16px 0!important;}
+  .bf87-pane {padding-bottom:8px;}
+  .bf87-pane .file-row {display:flex;flex-wrap:wrap;gap:10px;padding:12px!important;}
+  .bf87-pane .file-info {flex:1 1 100%;}
+  .bf87-pane .file-actions {width:100%;display:flex;justify-content:flex-end;gap:8px;}
+  .bf87-pane .file-actions button {min-height:44px!important;min-width:44px;font-size:12px!important;}
+  .bf87-pane .file-actions button:first-child {flex:1;}
+  .bf-piece-card .bf-section-title {align-items:flex-start;gap:10px;}
+  .bf-piece-card .bf-section-title .btn {flex:none;}
+  .bf-nc-results {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px!important;}
+  .bf-nc-number {min-width:0;padding:12px 7px!important;overflow-wrap:anywhere;}
+  .bf-nc-number strong {font-size:17px!important;line-height:1.35;}
+  .bf-nc-number small {font-size:10px;}
+  .bf-local-fusion input {width:100%;min-width:0;}
+  .bf-client-detail-head h2 {font-size:23px;overflow-wrap:anywhere;}
+  .bf-client-order {flex-wrap:wrap;gap:10px;}
+  .bf-client-order>span {flex:1 1 180px;}
+  .bf-client-order>strong,.bf77-report-row>strong {flex:none;white-space:nowrap;}
+  .bf-client-order,#bfClientNewJob {max-width:100%;white-space:normal;}
+  .bf-archive-tools {display:grid!important;grid-template-columns:minmax(0,1fr);align-items:stretch!important;}
+  .bf-archive-tools>label {min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .bf-archive-tools select {width:100%;min-width:0;}
+  .bf-archive-count {justify-self:end;}
+  .bf-file-group-title>div {min-width:0;overflow-wrap:anywhere;}
+  .bf-file-group-title>span {flex:none;white-space:nowrap;}
+  .bf-day {padding:7px 5px;min-height:56px;}
+  .bf-day small {font-size:9px;overflow-wrap:anywhere;line-height:1.2;}
+  .bf-home-task {gap:10px;flex-wrap:wrap;}
+  .bf-home-task small {flex:none;}
+  .bf-task-row>div {min-width:0;overflow-wrap:anywhere;}
+  .bf-task-row>input,.bf-task-row>.bf-small-delete {flex:none;}
+  .bf-session {flex-wrap:wrap;}
+  .bf-session>span {flex:1 1 130px;min-width:0;overflow-wrap:anywhere;}
+  .bf-session>strong {white-space:nowrap;}
+  .bf-delete-session,.bf-small-delete {min-width:44px;min-height:44px;}
+  .bf-client-right,.bf-quote-editor,.bf-quote-line {scroll-margin-top:calc(90px + env(safe-area-inset-top));scroll-margin-bottom:100px;}
+  .settings-actions .btn {white-space:normal;text-align:center;}
+  .bf-overlay-open .toast {bottom:calc(12px + env(safe-area-inset-bottom));}
+  .bf-keyboard-open .content-shell {padding-bottom:24px!important;}
+}
+@media(max-width:620px) {
+  #modalBackdrop {padding:calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom))!important;align-items:center!important;}
+  #jobModal {max-height:calc(var(--bf-viewport-height) - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;border-radius:14px!important;padding:20px 16px!important;}
+  #accountSetupBackdrop {padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom))!important;}
+  .onboarding-card {max-height:calc(var(--bf-viewport-height) - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;}
+  .detail-section {padding:16px!important;}
+  .bf87-tab {min-height:44px!important;font-size:12px!important;}
+  .bf-quote-actions {grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .bf-quote-actions .btn:first-child {grid-column:1/-1;}
+  .bf-quote-total {overflow-wrap:anywhere;}
+  .bf-quote-total strong {display:block;white-space:normal;}
+  .bf-quote-line {scroll-margin-top:calc(90px + env(safe-area-inset-top));}
+  .bf-note-card h3,.bf-note-body {overflow-wrap:anywhere;}
+  #bfNotes .bf-notes-content>.bf-heading-row {flex-wrap:wrap;}
+  #bfNoteFilter,#bfNoteSearch {width:100%;min-width:0;}
+}
+@media(max-width:360px) {
+  .topbar {gap:7px;}
+  .topbar h1 {font-size:16px!important;}
+  .mobile-top-icon {width:32px;height:32px;}
+  .top-actions {gap:5px;}
+  .icon-action,.account-button {width:36px;height:36px;}
+  .bf-nc-results {grid-template-columns:1fr;}
+  .bf-nc-number {display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .bf-cal-grid {gap:4px;}
+  .bf-cal-dayname {font-size:10px;}
+}
+}
+
+@media screen {
+/* Anche i testi senza spazi devono restare dentro le proprie colonne. */
+.recent-code,.recent-main,.job-card-head>div,.job-meta>div,.bf-quote-fields>label,.bf-quote-line>label {min-width:0;}
+.recent-main b,.recent-code>span,.job-code,.job-client {overflow-wrap:anywhere;}
+.job-card-head>.status {flex-shrink:0;max-width:46%;}
+.job-meta {grid-template-columns:repeat(3,minmax(0,1fr));}
+.bf-quote-fields select {min-width:0!important;max-width:100%;width:100%;}
+.bf-qr-panel>div {min-width:0;max-width:100%;overflow-wrap:anywhere;}
+.bf80-kpi strong,.bf-summary-card>strong {overflow-wrap:anywhere;}
+@media(max-width:860px) {
+  #detailModal {scroll-padding-top:calc(72px + env(safe-area-inset-top));scroll-padding-bottom:20px;}
+  .recent-code strong {max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
+}
+@media screen {
+.bf77-template-wrap label {min-width:0;grid-template-columns:minmax(0,1fr);}
+#bf77QuoteTemplate {min-width:0!important;width:100%;max-width:100%;}
+}

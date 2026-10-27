@@ -1,4 +1,4 @@
-const CACHE = "badfish-manager-v92";
+const CACHE = "badfish-manager-v93";
 const SHELL = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const SHELL = [
   "./assets/apple-touch-icon.png?v=91",
   "./config.js?v=62",
   "./styles.css?v=92",
+  "./atelier-v93.css?v=93",
   "./assets/icon-192.png?v=91",
   "./assets/badfish-logo.png?v=91",
   "./drive.js?v=90",

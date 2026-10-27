@@ -11,7 +11,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#071014" />
+    <meta name="theme-color" content="#202825" />
     <meta name="color-scheme" content="light" />
     <meta name="application-name" content="Badfish Manager" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -41,6 +41,7 @@
     <script src="./config.js?v=62"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="./styles.css?v=92" />
+    <link rel="stylesheet" href="./atelier-v93.css?v=93" />
   </head>
   <body>
     <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -134,6 +135,7 @@
         <circle cx="12" cy="12" r="9" />
         <path d="M12 7v5l3 2" />
       </symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 3v17h17M8 15v-4m5 4V6m5 9V9"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h2m4 0h2"/></symbol><symbol id="i-notebook" viewBox="0 0 24 24"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 7h4M3 12h4M3 17h4m4-10h5m-5 5h5"/></symbol>
     </svg>
 
     <div id="appShell" class="app-shell">
@@ -144,39 +146,40 @@
           aria-label="Badfish Manager - Dashboard"
         >
           <img src="./assets/icon-192.png?v=91" alt="" />
-          <div><strong>BADFISH</strong><span>MANAGER</span></div>
+          <div><strong>BFBJ</strong><span>ATELIER MANAGER</span></div>
         </button>
 
-        <nav class="desktop-nav">
-          <button class="nav-item active" data-view="dashboard">
+        <nav class="desktop-nav"><span class="nav-section-label">SPAZIO DI LAVORO</span>
+<button class="nav-item active" data-view="dashboard">
             <svg><use href="#i-home" /></svg><span>Dashboard</span>
           </button>
-          <button class="nav-item" data-view="jobs">
+<button class="nav-item" data-view="jobs">
             <svg><use href="#i-briefcase" /></svg><span>Commesse</span
             ><b id="navJobsCount" class="nav-count">0</b>
           </button>
-          <button class="nav-item" data-view="clients">
+<button class="nav-item" data-view="files">
+            <svg><use href="#i-folder" /></svg><span>Archivio file</span>
+          </button>
+<button class="nav-item" data-view="planner">
+            <svg><use href="#i-calendar" /></svg><span>Calendario e attività</span>
+          </button>
+<button class="nav-item" data-view="notes">
+            <svg><use href="#i-notebook" /></svg><span>Appunti e macchine</span>
+          </button>
+<span class="nav-section-label">AZIENDA</span>
+<button class="nav-item" data-view="clients">
             <svg><use href="#i-user" /></svg><span>Clienti</span>
           </button>
-          <button class="nav-item" data-view="quotes">
+<button class="nav-item" data-view="quotes">
             <svg><use href="#i-files" /></svg><span>Preventivi</span>
           </button>
-          <button class="nav-item" data-view="files">
-            <svg><use href="#i-files" /></svg><span>Archivio file</span>
+<button class="nav-item" data-view="stats">
+            <svg><use href="#i-chart" /></svg><span>Statistiche</span>
           </button>
-          <button class="nav-item" data-view="planner">
-            <svg><use href="#i-clock" /></svg><span>Calendario e attività</span>
-          </button>
-          <button class="nav-item" data-view="notes">
-            <svg><use href="#i-files" /></svg><span>Appunti e macchine</span>
-          </button>
-          <button class="nav-item" data-view="stats">
-            <svg><use href="#i-clock" /></svg><span>Statistiche</span>
-          </button>
-          <button class="nav-item" data-view="settings">
+<span class="nav-section-label">PREFERENZE</span>
+<button class="nav-item" data-view="settings">
             <svg><use href="#i-settings" /></svg><span>Impostazioni</span>
-          </button>
-        </nav>
+          </button></nav>
 
         <div class="sidebar-spacer"></div>
         <div class="sidebar-drive">
@@ -189,7 +192,7 @@
             <svg><use href="#i-refresh" /></svg> Sincronizza
           </button>
         </div>
-        <div class="sidebar-version">Badfish Manager <b>v9.0</b></div>
+        <div class="sidebar-version">BFBJ · Gestionale <b>v9.3</b></div>
       </aside>
 
       <main class="main-shell">
@@ -231,20 +234,20 @@
           <section id="dashboardView" class="view active">
             <article class="welcome-card">
               <div class="welcome-copy">
-                <span class="eyebrow">BADFISH WORKFLOW</span>
+                <span class="eyebrow">IL TUO ATELIER, OGNI GIORNO</span>
                 <h2>
-                  File, misure e ore.<br /><em>Tutto in un unico posto.</em>
+                  Ogni dettaglio conta.<br /><em>Ogni lavoro, sotto controllo.</em>
                 </h2>
                 <p>
-                  Ogni lavorazione ha il suo archivio, una stima del grezzo dal
-                  file NC e uno storico delle ore realmente lavorate.
+                  Dalla prima idea al pezzo finito: commesse, progetti, grezzi e
+                  tempi di lavorazione. Il tuo laboratorio, in ordine.
                 </p>
                 <div class="welcome-actions">
                   <button class="btn primary" data-create-job>
                     <svg><use href="#i-plus" /></svg> Crea commessa
                   </button>
                   <button class="btn subtle" data-view="jobs">
-                    <svg><use href="#i-search" /></svg> Cerca una commessa
+                    <svg><use href="#i-search" /></svg> Apri le commesse
                   </button>
                 </div>
               </div>
@@ -255,6 +258,7 @@
               </div>
             </article>
 
+            
             <div class="stats-grid">
               <article class="stat-card">
                 <div class="stat-icon">
@@ -316,7 +320,8 @@
                 <div id="bfTodayTasks"></div>
               </article>
             </div>
-            <section class="panel bf77-report" id="bf77HourReport"></section>
+            
+            <section class="atelier-launch" aria-label="Sezioni del gestionale"><div class="atelier-section-title"><span class="eyebrow">IL TUO SPAZIO DI LAVORO</span><h3>Tutto a portata di mano</h3></div><div class="atelier-launch-grid"><button class="atelier-module" data-view="clients"><svg class="icon"><use href="#i-user" /></svg><span><b>Clienti</b><small>Contatti e storico lavori</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button><button class="atelier-module" data-view="quotes"><svg class="icon"><use href="#i-files" /></svg><span><b>Preventivi</b><small>Documenti e costi</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button><button class="atelier-module" data-view="planner"><svg class="icon"><use href="#i-calendar" /></svg><span><b>Calendario</b><small>Scadenze e attività</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button><button class="atelier-module" data-view="notes"><svg class="icon"><use href="#i-notebook" /></svg><span><b>Appunti</b><small>Parametri e macchine</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button><button class="atelier-module" data-view="stats"><svg class="icon"><use href="#i-chart" /></svg><span><b>Statistiche</b><small>Ore e andamento aziendale</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button><button class="atelier-module" data-view="files"><svg class="icon"><use href="#i-folder" /></svg><span><b>Archivio</b><small>Progetti e documenti</small></span><svg class="icon module-arrow"><use href="#i-chevron" /></svg></button></div></section>
             <div class="dashboard-grid">
               <article class="panel recent-panel">
                 <div class="panel-head">
@@ -373,6 +378,7 @@
                 </article>
               </aside>
             </div>
+            <section class="panel bf77-report" id="bf77HourReport"></section>
           </section>
 
           <section id="jobsView" class="view">
@@ -723,13 +729,13 @@
             <svg><use href="#i-folder" /></svg>Archivio file
           </button>
           <button data-view="planner">
-            <svg><use href="#i-clock" /></svg>Calendario e attività
+            <svg><use href="#i-calendar" /></svg>Calendario e attività
           </button>
           <button data-view="notes">
-            <svg><use href="#i-files" /></svg>Appunti e macchine
+            <svg><use href="#i-notebook" /></svg>Appunti e macchine
           </button>
           <button data-view="stats">
-            <svg><use href="#i-clock" /></svg>Statistiche
+            <svg><use href="#i-chart" /></svg>Statistiche
           </button>
           <button data-view="settings">
             <svg><use href="#i-settings" /></svg>Impostazioni

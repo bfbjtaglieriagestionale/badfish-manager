@@ -44,6 +44,7 @@
     <link rel="stylesheet" href="./atelier-v93.css?v=93" />
     <link rel="stylesheet" href="./mobile-v94.css?v=94" />
     <link rel="stylesheet" href="./repeat-jobs.css?v=95" />
+    <link rel="stylesheet" href="./quote-pdf-v96.css?v=96" />
   </head>
   <body>
     <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -694,12 +695,17 @@
                     Salva Client ID
                   </button>
                 </details>
+                <h3>Dati azienda e preventivi</h3>
+                <p>Questi dati compaiono nell’intestazione dei PDF. I campi vuoti vengono omessi.</p>
                 <label class="field-label"
                   >Nome azienda<input
                     id="companyName"
                     type="text"
                     value="Badfish Body Jewelry"
                 /></label>
+                <label class="field-label">Indirizzo e sede<textarea id="companyAddress" rows="2" placeholder="Via, CAP, città e provincia"></textarea></label>
+                <label class="field-label">Partita IVA<input id="companyVat" type="text" /></label>
+                <label class="field-label">Contatti<textarea id="companyContacts" rows="2" placeholder="Telefono, email, sito web"></textarea></label>
                 <button id="saveSettingsBtn" class="btn subtle">
                   Salva dati app
                 </button>
@@ -905,7 +911,7 @@
     <script src="./vendor/fzstd-0.1.1.js"></script>
     <script src="./fusion-stock.js?v=90"></script>
     <script src="./repeat-jobs.js?v=95"></script>
-    <script src="./app.js?v=95"></script>
+    <script src="./app.js?v=96"></script>
     <script src="./backup.js?v=78"></script>
     <script src="./stats.js?v=92"></script>
     <script src="./mobile-nav.js?v=94"></script>

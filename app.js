@@ -413,6 +413,9 @@ function switchView(view) {
 
 function render() {
   $("#companyName").value = db.settings.companyName || "Badfish Body Jewelry";
+  ["companyAddress", "companyVat", "companyContacts"].forEach((key) => {
+    $("#" + key).value = db.settings[key] || "";
+  });
   $("#googleClientId").value = BadfishDrive.getClientId();
   $("#driveFolderText").textContent =
     window.BADFISH_CONFIG?.driveRootFolder || "BADFISH_MANAGER";
@@ -1532,6 +1535,9 @@ function initEvents() {
   $("#saveSettingsBtn").addEventListener("click", async () => {
     db.settings.companyName =
       $("#companyName").value.trim() || "Badfish Body Jewelry";
+    ["companyAddress", "companyVat", "companyContacts"].forEach((key) => {
+      db.settings[key] = $("#" + key).value.trim();
+    });
     await saveAndSync("Impostazioni salvate.");
   });
   document.addEventListener("click", async (e) => {
@@ -1879,12 +1885,15 @@ function bfMountQR() {
     }
   }
 }
-function bfPrintDocument(html) {
+async function bfPrintDocument(html) {
   document.querySelector(".bf-print-area")?.remove();
   const page = document.createElement("section");
   page.className = "bf-print-area";
   page.innerHTML = html;
   document.body.appendChild(page);
+  await Promise.all([...page.querySelectorAll("img")].map((img) =>
+    img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
+  if (document.fonts?.ready) await document.fonts.ready;
   window.print();
 }
 const bfOrigOpenDetail = openDetail;
@@ -1917,6 +1926,10 @@ function bfQuoteNew() {
       ),
     date: new Date().toISOString().slice(0, 10),
     customer: "",
+    customerDetails: "",
+    delivery: "",
+    payment: "",
+    vatRate: "",
     subject: "",
     jobId: "",
     status: "Bozza",
@@ -1939,6 +1952,17 @@ function bfQuoteSum(q) {
     (n, i) => n + (Number(i.qty) || 0) * (Number(i.price) || 0),
     0,
   );
+}
+// IVA facoltativa: i documenti precedenti mantengono il totale originale.
+function bfQuoteVatRate(q) {
+  return q.vatRate !== "" && q.vatRate != null && [0, 4, 5, 10, 22].includes(Number(q.vatRate))
+    ? Number(q.vatRate) : null;
+}
+function bfQuoteVat(q) {
+  return Math.round((Math.round(bfQuoteSum(q) * 100) / 100) * (bfQuoteVatRate(q) || 0)) / 100;
+}
+function bfQuoteTotal(q) {
+  return Math.round(bfQuoteSum(q) * 100) / 100 + bfQuoteVat(q);
 }
 function bfQuoteCost(q) {
   return (
@@ -1963,7 +1987,7 @@ function bfRenderQuotes() {
     : null;
   const keepCostsOpen = root.dataset.quoteId === q?.id && root.querySelector(".bf-quote-internal")?.open;
   root.dataset.quoteId = q?.id || "";
-  root.innerHTML = `<div class="bf-quote-head"><button class="btn primary" id="bfQuoteNew">+ Nuovo preventivo</button><p class="bf-help">Crea un preventivo libero. Cliente e commessa sono facoltativi; descrizioni e importi sono scritti da te.</p></div><div class="bf-quote-layout"><article class="panel bf-quote-list"><h3>Preventivi salvati <small>(${all.length})</small></h3>${all.map((x) => `<button type="button" class="bf-quote-entry ${q?.id === x.id ? "selected" : ""}" data-bf-open-quote="${bfQuoteEscape(x.id)}"><strong>${bfQuoteEscape(x.number)}</strong><span>${bfQuoteEscape(x.customer || "Cliente da definire")}</span><small>${bfQuoteEscape(x.subject || "Nessun oggetto")} · ${bfEuro(bfQuoteSum(x))}</small><small>${bfQuoteEscape(x.status || "Bozza")}</small></button>`).join("") || '<p class="bf-help">Nessun preventivo. Premi “Nuovo preventivo”.</p>'}${
+  root.innerHTML = `<div class="bf-quote-head"><button class="btn primary" id="bfQuoteNew">+ Nuovo preventivo</button><p class="bf-help">Crea un preventivo libero. Cliente e commessa sono facoltativi; descrizioni e importi sono scritti da te.</p></div><div class="bf-quote-layout"><article class="panel bf-quote-list"><h3>Preventivi salvati <small>(${all.length})</small></h3>${all.map((x) => `<button type="button" class="bf-quote-entry ${q?.id === x.id ? "selected" : ""}" data-bf-open-quote="${bfQuoteEscape(x.id)}"><strong>${bfQuoteEscape(x.number)}</strong><span>${bfQuoteEscape(x.customer || "Cliente da definire")}</span><small>${bfQuoteEscape(x.subject || "Nessun oggetto")} · ${bfEuro(bfQuoteTotal(x))}</small><small>${bfQuoteEscape(x.status || "Bozza")}</small></button>`).join("") || '<p class="bf-help">Nessun preventivo. Premi “Nuovo preventivo”.</p>'}${
     db.jobs.filter((j) => j.estimate).length
       ? `<div class="bf-quote-old"><b>Preventivi precedenti</b><p>Quelli salvati dentro le commesse non vengono cancellati.</p>${db.jobs
           .filter((j) => j.estimate)
@@ -1978,7 +2002,7 @@ function bfRenderQuotes() {
     root.querySelector(".bf-quote-internal").open = true;
 }
 function bfQuoteForm(q) {
-  return `<form id="bfQuoteIndependentForm" autocomplete="off"><div class="bf-heading-row"><h3>Modifica preventivo</h3><span class="bf-tag">${bfQuoteEscape(q.status)}</span></div><div class="bf-quote-fields"><label>Numero preventivo<input name="number" required maxlength="70" value="${bfQuoteEscape(q.number)}"></label><label>Data<input name="date" type="date" value="${bfQuoteEscape(q.date)}"></label><label>Cliente / destinatario<input name="customer" placeholder="Scrivi liberamente il destinatario" value="${bfQuoteEscape(q.customer)}"></label><label>Stato<select name="status">${["Bozza", "Inviato", "Accettato", "Rifiutato"].map((v) => `<option ${q.status === v ? "selected" : ""}>${v}</option>`).join("")}</select></label><label class="bf-span-all">Oggetto o titolo<input name="subject" placeholder="Esempio: Taglio di pietre su misura" value="${bfQuoteEscape(q.subject)}"></label><label class="bf-span-all">Commessa associata (facoltativa)<select name="jobId"><option value="">Nessuna commessa: preventivo indipendente</option>${db.jobs.map((j) => `<option value="${bfQuoteEscape(j.id)}" ${q.jobId === j.id ? "selected" : ""}>${bfQuoteEscape(j.code)} · ${bfQuoteEscape(j.article)}</option>`).join("")}</select></label><label>Validità fino al<input type="date" name="validUntil" value="${bfQuoteEscape(q.validUntil)}"></label><label class="bf-span-all">Presentazione / descrizione libera<textarea name="intro" rows="3" placeholder="Descrivi il lavoro come preferisci">${bfQuoteEscape(q.intro)}</textarea></label></div><div class="bf77-template-wrap"><label>Modello rapido<select id="bf77QuoteTemplate"><option value="">Preventivo libero (nessun modello)</option><option value="taglio">Taglio pietra</option><option value="lucidatura">Lucidatura</option><option value="cnc">Lavorazione CNC</option></select></label><small>Il modello aggiunge una riga modificabile senza cancellare le tue descrizioni.</small></div><h4>Voci del preventivo</h4><p class="bf-help">Aggiungi tutti gli articoli o servizi che vuoi, con quantità e importo unitario.</p><div class="bf-quote-items">${(q.items || []).map((it, i) => bfQuoteRow(it, i)).join("")}</div><button type="button" class="btn subtle" id="bfQuoteAddRow">+ Aggiungi riga</button><div class="bf-quote-total">Totale preventivo: <strong id="bfQuoteLiveTotal">${bfEuro(bfQuoteSum(q))}</strong></div><div class="bf-quote-fields"><label class="bf-span-all">Note per il cliente<textarea name="notes" rows="3">${bfQuoteEscape(q.notes)}</textarea></label><label class="bf-span-all">Condizioni / pagamenti<textarea name="conditions" rows="3">${bfQuoteEscape(q.conditions)}</textarea></label></div><details class="bf-quote-internal"><summary>Calcolo costi interni (non visibili nel PDF cliente)</summary><div class="bf-quote-fields">${[
+  return `<form id="bfQuoteIndependentForm" autocomplete="off"><div class="bf-heading-row"><h3>Modifica preventivo</h3><span class="bf-tag">${bfQuoteEscape(q.status)}</span></div><div class="bf-quote-fields"><label>Numero preventivo<input name="number" required maxlength="70" value="${bfQuoteEscape(q.number)}"></label><label>Data<input name="date" type="date" value="${bfQuoteEscape(q.date)}"></label><label>Cliente / destinatario<input name="customer" placeholder="Scrivi liberamente il destinatario" value="${bfQuoteEscape(q.customer)}"></label><label class="bf-span-all">Dati cliente per il PDF<textarea name="customerDetails" rows="2" placeholder="Indirizzo, partita IVA o altri riferimenti">${bfQuoteEscape(q.customerDetails)}</textarea></label><label>Stato<select name="status">${["Bozza", "Inviato", "Accettato", "Rifiutato"].map((v) => `<option ${q.status === v ? "selected" : ""}>${v}</option>`).join("")}</select></label><label class="bf-span-all">Oggetto o titolo<input name="subject" placeholder="Esempio: Taglio di pietre su misura" value="${bfQuoteEscape(q.subject)}"></label><label class="bf-span-all">Commessa associata (facoltativa)<select name="jobId"><option value="">Nessuna commessa: preventivo indipendente</option>${db.jobs.map((j) => `<option value="${bfQuoteEscape(j.id)}" ${q.jobId === j.id ? "selected" : ""}>${bfQuoteEscape(j.code)} · ${bfQuoteEscape(j.article)}</option>`).join("")}</select></label><label>Validità fino al<input type="date" name="validUntil" value="${bfQuoteEscape(q.validUntil)}"></label><label>Tempi di consegna<input name="delivery" placeholder="Es. 15 giorni lavorativi dalla conferma" value="${bfQuoteEscape(q.delivery)}"></label><label>Pagamento<input name="payment" placeholder="Es. Bonifico a 30 giorni" value="${bfQuoteEscape(q.payment)}"></label><label>IVA nel PDF<select name="vatRate">${[["", "Non calcolata / da specificare"], ["0", "0%"], ["4", "4%"], ["5", "5%"], ["10", "10%"], ["22", "22%"]].map(([v, label]) => `<option value="${v}" ${String(q.vatRate ?? "") === v ? "selected" : ""}>${label}</option>`).join("")}</select></label><label class="bf-span-all">Presentazione / descrizione libera<textarea name="intro" rows="3" placeholder="Descrivi il lavoro come preferisci">${bfQuoteEscape(q.intro)}</textarea></label></div><div class="bf77-template-wrap"><label>Modello rapido<select id="bf77QuoteTemplate"><option value="">Preventivo libero (nessun modello)</option><option value="taglio">Taglio pietra</option><option value="lucidatura">Lucidatura</option><option value="cnc">Lavorazione CNC</option></select></label><small>Il modello aggiunge una riga modificabile senza cancellare le tue descrizioni.</small></div><h4>Voci del preventivo</h4><p class="bf-help">Aggiungi tutti gli articoli o servizi che vuoi, con quantità e importo unitario.</p><div class="bf-quote-items">${(q.items || []).map((it, i) => bfQuoteRow(it, i)).join("")}</div><button type="button" class="btn subtle" id="bfQuoteAddRow">+ Aggiungi riga</button><div class="bf-quote-total">Totale preventivo: <strong id="bfQuoteLiveTotal">${bfEuro(bfQuoteTotal(q))}</strong></div><div class="bf-quote-fields"><label class="bf-span-all">Note per il cliente<textarea name="notes" rows="3">${bfQuoteEscape(q.notes)}</textarea></label><label class="bf-span-all">Condizioni / pagamenti<textarea name="conditions" rows="3">${bfQuoteEscape(q.conditions)}</textarea></label></div><details class="bf-quote-internal"><summary>Calcolo costi interni (non visibili nel PDF cliente)</summary><div class="bf-quote-fields">${[
     ["hours", "Ore previste"],
     ["labourRate", "Manodopera €/h"],
     ["machineRate", "Macchina €/h"],
@@ -1991,7 +2015,7 @@ function bfQuoteForm(q) {
     )
     .join(
       "",
-    )}</div><p class="bf-help" id="bfQuoteCostSummary">Costo stimato ${bfEuro(bfQuoteCost(q))} · Margine stimato ${bfEuro(bfQuoteSum(q) - bfQuoteCost(q))}</p></details><div class="bf-quote-actions"><button type="submit" class="btn primary">Salva preventivo</button><button type="button" class="btn secondary" id="bf77QuotePreview">Anteprima</button><button type="button" class="btn secondary" id="bf77QuoteDuplicate">Duplica</button><button type="button" class="btn secondary" id="bfQuotePrint">Stampa / PDF</button><button type="button" class="btn danger" id="bfQuoteDelete">Elimina</button></div><p class="bf-help">Il PDF non è una fattura. Imposte ed eventuale IVA non vengono calcolate automaticamente.</p></form>`;
+    )}</div><p class="bf-help" id="bfQuoteCostSummary">Costo stimato ${bfEuro(bfQuoteCost(q))} · Margine stimato ${bfEuro(bfQuoteSum(q) - bfQuoteCost(q))}</p></details><div class="bf-quote-actions"><button type="submit" class="btn primary">Salva preventivo</button><button type="button" class="btn secondary" id="bf77QuotePreview">Anteprima</button><button type="button" class="btn secondary" id="bf77QuoteDuplicate">Duplica</button><button type="button" class="btn secondary" id="bfQuotePrint">Stampa / PDF</button><button type="button" class="btn danger" id="bfQuoteDelete">Elimina</button></div><p class="bf-help">Il PDF non è una fattura. I prezzi delle voci sono al netto dell’eventuale IVA selezionata. Completa l’intestazione in Impostazioni → Dati azienda e preventivi.</p></form>`;
 }
 function bfQuoteRow(it, i) {
   return `<div class="bf-quote-line"><label>Descrizione<textarea data-qi="description" rows="2" placeholder="Lavorazione / materiale">${bfQuoteEscape(it.description)}</textarea></label><label>Quantità<input data-qi="qty" type="number" min="0" step="0.01" value="${bfQuoteEscape(it.qty)}"></label><label>Unità<input data-qi="unit" value="${bfQuoteEscape(it.unit)}" maxlength="15"></label><label>Prezzo unitario €<input data-qi="price" type="number" min="0" step="0.01" value="${bfQuoteEscape(it.price)}"></label><button type="button" class="bf-quote-remove" title="Elimina riga">×</button></div>`;
@@ -2006,6 +2030,10 @@ function bfReadQuotePage() {
     "number",
     "date",
     "customer",
+    "customerDetails",
+    "delivery",
+    "payment",
+    "vatRate",
     "subject",
     "jobId",
     "status",
@@ -2032,21 +2060,37 @@ function bfQuotePreview() {
   if (!$("#bfQuoteIndependentForm")) return;
   try {
     const q = bfReadQuotePage();
-    $("#bfQuoteLiveTotal").textContent = bfEuro(bfQuoteSum(q));
+    $("#bfQuoteLiveTotal").textContent = bfEuro(bfQuoteTotal(q));
     $("#bfQuoteCostSummary").textContent =
       `Costo stimato ${bfEuro(bfQuoteCost(q))} · Margine stimato ${bfEuro(bfQuoteSum(q) - bfQuoteCost(q))}`;
   } catch {}
 }
 function bfQuoteDocumentHTML(q) {
-  const company = esc(db.settings.companyName || "Badfish Body Jewelry");
   const nl = (v) => esc(v || "").replace(/\n/g, "<br>");
-  const rows = (q.items || [])
-    .map(
-      (it) =>
-        `<tr><td class="bfdoc-description">${nl(it.description)}</td><td>${esc(it.qty)} ${esc(it.unit)}</td><td>${bfEuro(it.price)}</td><td class="bfdoc-amount">${bfEuro((Number(it.qty) || 0) * (Number(it.price) || 0))}</td></tr>`,
-    )
-    .join("");
-  return `<div class="bfdoc"><header class="bfdoc-header"><div><div class="bfdoc-kicker">BADFISH · DOCUMENTI</div><h1>${company}</h1><span>Preventivo commerciale</span></div><div class="bfdoc-number"><span>PREVENTIVO</span><strong>${esc(q.number || "—")}</strong><small>Data: ${formatDate(q.date)}</small></div></header><section class="bfdoc-meta"><div><small>DESTINATARIO</small><strong>${nl(q.customer) || "Destinatario da definire"}</strong></div><div><small>VALIDITÀ</small><strong>${q.validUntil ? formatDate(q.validUntil) : "Da concordare"}</strong></div></section><section class="bfdoc-subject"><small>OGGETTO</small><h2>${nl(q.subject) || "Preventivo di lavorazione"}</h2>${q.intro ? `<p>${nl(q.intro)}</p>` : ""}</section><table class="bfdoc-table"><thead><tr><th>Descrizione</th><th>Quantità</th><th>Prezzo unitario</th><th>Importo</th></tr></thead><tbody>${rows || '<tr><td colspan="4">Nessuna voce inserita</td></tr>'}</tbody></table><div class="bfdoc-total"><span>TOTALE PREVENTIVO</span><strong>${bfEuro(bfQuoteSum(q))}</strong></div>${q.notes ? `<section class="bfdoc-section"><h3>Note</h3><p>${nl(q.notes)}</p></section>` : ""}${q.conditions ? `<section class="bfdoc-section"><h3>Condizioni e pagamenti</h3><p>${nl(q.conditions)}</p></section>` : ""}<footer class="bfdoc-footer">Documento di preventivo, non fattura fiscale. IVA e imposte non calcolate automaticamente.</footer></div>`;
+  const company = nl(db.settings.companyName || "BFBJ · Taglieria pietre");
+  const vat = bfQuoteVatRate(q);
+  const rows = (q.items || []).map((it) => {
+    const [title, ...details] = String(it.description || "").split("\n");
+    return `<tr><td><strong>${esc(title)}</strong>${details.length ? `<span class="bfp-detail">${nl(details.join("\n"))}</span>` : ""}</td><td>${esc(it.qty)}<span class="bfp-unit">${esc(it.unit || "")}</span></td><td>${bfEuro(it.price)}</td><td><strong>${bfEuro((Number(it.qty) || 0) * (Number(it.price) || 0))}</strong></td></tr>`;
+  }).join("");
+  const terms = [
+    q.validUntil && ["VALIDITÀ", `Fino al ${formatDate(q.validUntil)}`],
+    q.delivery && ["CONSEGNA", q.delivery],
+    q.payment && ["PAGAMENTO", q.payment],
+  ].filter(Boolean);
+  return `<article class="bfp-root">
+    <header class="bfp-brand"><img class="bfp-logo" src="./assets/badfish-logo.png?v=91" alt="BFBJ - Taglieria pietre"><div class="bfp-company"><strong>${company}</strong>${db.settings.companyAddress ? `<p>${nl(db.settings.companyAddress)}</p>` : ""}${db.settings.companyVat ? `<p>P. IVA ${nl(db.settings.companyVat)}</p>` : ""}${db.settings.companyContacts ? `<p>${nl(db.settings.companyContacts)}</p>` : ""}</div></header>
+    <section class="bfp-title"><div><small>OFFERTA ECONOMICA</small><h1>Preventivo</h1></div><div class="bfp-number"><strong>${esc(q.number || "—")}</strong><span>Data ${formatDate(q.date)}</span></div></section>
+    <section class="bfp-meta"><div><small>SPETTABILE</small><strong>${nl(q.customer) || "Destinatario da definire"}</strong>${q.customerDetails ? `<p>${nl(q.customerDetails)}</p>` : ""}</div><div><small>OGGETTO</small><strong>${nl(q.subject) || "Preventivo di lavorazione"}</strong></div></section>
+    ${q.intro ? `<section class="bfp-intro">${nl(q.intro)}</section>` : ""}
+    <small class="bfp-table-label">DETTAGLIO LAVORAZIONI</small>
+    <table class="bfp-table"><colgroup><col style="width:55%"><col style="width:12%"><col style="width:16%"><col style="width:17%"></colgroup><thead><tr><th>Descrizione</th><th>Q.tà</th><th>Prezzo unit.</th><th>Importo</th></tr></thead><tbody>${rows || '<tr><td colspan="4">Nessuna voce inserita</td></tr>'}</tbody></table>
+    <div class="bfp-closing"><section class="bfp-summary">${q.notes ? `<div class="bfp-notes"><small>NOTE DI LAVORAZIONE</small><p>${nl(q.notes)}</p></div>` : '<div></div>'}<div class="bfp-totals">${vat !== null ? `<div><span>Imponibile</span><span>${bfEuro(bfQuoteSum(q))}</span></div><div><span>IVA ${vat}%</span><span>${bfEuro(bfQuoteVat(q))}</span></div>` : ""}<div class="bfp-total"><span>TOTALE</span><strong>${bfEuro(bfQuoteTotal(q))}</strong></div>${vat === null ? '<p class="bfp-tax-note">IVA non calcolata. Eventuale applicazione da specificare nelle condizioni.</p>' : ""}</div></section>
+    ${terms.length ? `<section class="bfp-terms">${terms.map(([title, value]) => `<div><small>${title}</small><p>${nl(value)}</p></div>`).join("")}</section>` : ""}
+    ${q.conditions ? `<section class="bfp-conditions"><small>CONDIZIONI E PAGAMENTI</small><p>${nl(q.conditions)}</p></section>` : ""}
+    <div class="bfp-signature"><span>Per accettazione</span><span class="bfp-sign-line"></span></div>
+    <footer class="bfp-footer"><span>Documento di preventivo, non fattura fiscale.</span><span>${esc(q.number || "")}</span></footer></div>
+  </article>`;
 }
 function bfQuotePrintPage(q) {
   bfPrintDocument(bfQuoteDocumentHTML(q));

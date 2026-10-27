@@ -1,4 +1,4 @@
-const CACHE = "badfish-manager-v97";
+const CACHE = "badfish-manager-v98";
 const SHELL = [
   "./",
   "./index.html",
@@ -22,7 +22,7 @@ const SHELL = [
   "./vendor/fflate-0.8.2.js",
   "./vendor/fzstd-0.1.1.js",
   "./fusion-stock.js?v=90",
-  "./app.js?v=97",
+  "./app.js?v=98",
   "./backup.js?v=78",
   "./stats.js?v=92",
   "./mobile-nav.js?v=94",

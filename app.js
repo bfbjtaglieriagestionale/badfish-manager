@@ -940,7 +940,7 @@ function bfRenderPlanner() {
     ...Array.from({ length: days }, (_, i) => {
       const d = `${bfPlannerMonth}-${String(i + 1).padStart(2, "0")}`,
         n = items.filter((t) => t.date === d && !t.done).length;
-      return `<button class="bf-day ${d === today ? "today" : ""} ${n ? "has-tasks" : ""}" data-bf-date="${d}"><strong>${i + 1}</strong>${n ? `<small>${n} attività</small>` : ""}</button>`;
+      return `<button class="bf-day ${d === today ? "today" : ""} ${n ? "has-tasks" : ""}" data-bf-date="${d}" aria-label="${i + 1} ${new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(start)}, ${n} attività da fare"><strong>${i + 1}</strong>${n ? `<small><span class="bf-day-count">${n}</span><span class="bf-day-label"> attività</span></small>` : ""}</button>`;
     }),
   ].join("");
   root.innerHTML = `<div class="bf-planner-layout"><article class="panel bf-planner-calendar"><div class="bf-heading-row"><div><span class="eyebrow">PIANIFICAZIONE</span><h3>${new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(start)}</h3></div><div class="bf-button-group"><button class="btn subtle" data-bf-month="-1" aria-label="Mese precedente">←</button><button class="btn subtle" data-bf-month="1" aria-label="Mese successivo">→</button></div></div><div class="bf-cal-grid">${grid}</div></article><article class="panel bf-form-card"><h3>Nuova attività</h3><p class="bf-help">Una scadenza o un promemoria, anche senza commessa.</p><form id="bfTaskForm" class="bf-inline-form"><label>Attività<input name="title" required maxlength="180" placeholder="Es. Preparare grezzo in quarzo"></label><label>Data<input name="date" type="date" value="${today}"></label><label>Commessa (facoltativa)<select name="jobId"><option value="">Attività generale</option>${db.jobs.map((j) => `<option value="${esc(j.id)}">${esc(j.code)} · ${esc(j.article)}</option>`).join("")}</select></label><label>Dettagli<textarea name="description" rows="2" placeholder="Informazioni utili..."></textarea></label><button class="btn primary" type="submit">+ Aggiungi attività</button></form></article></div><article class="panel bf-list-panel"><div class="bf-heading-row"><h3>Le tue attività</h3><span class="bf-muted">${items.filter((t) => !t.done).length} da fare</span></div><div class="bf-task-items">${
@@ -1196,7 +1196,8 @@ function bfClientDetail(c, jobs) {
   }<button class="btn primary" id="bfClientNewJob">+ Nuova commessa per questo cliente</button>`;
 }
 function bfRevealOnMobile(selector) {
-  if (!window.matchMedia("(max-width: 860px)").matches) return;
+  const limit = selector === ".bf-quote-editor" ? 1100 : 860;
+  if (!window.matchMedia(`(max-width: ${limit}px)`).matches) return;
   requestAnimationFrame(() => $(selector)?.scrollIntoView({ block: "start", behavior: "instant" }));
 }
 
@@ -2116,6 +2117,7 @@ document.addEventListener("click", async (e) => {
     bfEditingQuoteId = copy.id;
     await saveAndSync("Preventivo duplicato.");
     bfRenderQuotes();
+    bfRevealOnMobile(".bf-quote-editor");
     return;
   }
   if (b.id === "bf77QuotePreview") {
@@ -2183,6 +2185,7 @@ document.addEventListener("click", async (e) => {
     bfEditingQuoteId = q.id;
     await saveAndSync("Preventivo precedente importato come copia.");
     bfRenderQuotes();
+    bfRevealOnMobile(".bf-quote-editor");
     return;
   }
   if (b.id === "bfQuoteAddRow") {

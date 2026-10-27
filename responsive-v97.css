@@ -1,0 +1,49 @@
+/* v97: correzioni verificate su PC, tablet e telefono. Solo schermo. */
+@media screen {
+  /* La descrizione mantiene una riga intera anche nell'editor affiancato. */
+  .bf-quote-line {grid-template-columns:repeat(3,minmax(0,1fr)) 44px;}
+  .bf-quote-line label:first-child {grid-column:1/-1;}
+  .bf-quote-remove {min-width:44px;min-height:44px;}
+  .bf-session>span {flex:1;min-width:0;overflow-wrap:anywhere;}
+  .bf-session>strong,.bf-session>.bf-delete-session {flex-shrink:0;}
+  .bf-delete-session {min-width:44px;min-height:44px;}
+  /* Chiusura raggiungibile anche dopo aver scorso un preventivo lungo. */
+  #bf77PreviewClose {position:sticky;top:0;z-index:2;box-shadow:0 4px 12px #20282512;}
+  .bf77-preview-paper {scroll-padding-top:64px;}
+  @media (min-width:861px) and (max-width:1100px) {
+    .bf-quote-layout {grid-template-columns:minmax(0,1fr);}
+  }
+  @media (max-width:600px) {
+    .bf-day small {display:flex;justify-content:center;margin-top:4px;font-size:10px;line-height:1;}
+    .bf-day-count {display:inline-grid;place-items:center;min-width:17px;height:17px;padding:2px;border-radius:50%;background:#dfe9ce;color:#344e36;}
+    .bf-day-label {display:none;}
+  }
+  /* Anteprima leggibile senza dover cercare totali e importi fuori schermo. */
+  @media (max-width:700px) {
+    .bf77-paper-content {overflow-x:visible;}
+    .bf77-paper-content .bfp-root {min-width:0;width:100%;font-size:12px;}
+    .bfp-brand {gap:16px;padding-bottom:20px;}
+    .bfp-logo {width:90px;height:90px;}
+    .bfp-company {flex:1;min-width:0;width:auto;font-size:11px;}
+    .bfp-company>strong {font-size:12px;}
+    .bfp-title {align-items:flex-start;flex-wrap:wrap;gap:12px;margin:20px 0;}
+    .bfp-root .bfp-title h1 {font-size:28px;}
+    .bfp-number {max-width:100%;text-align:left;}
+    .bfp-meta {grid-template-columns:minmax(0,1fr);gap:18px;padding:14px;}
+    .bfp-root .bfp-table {font-size:10px;}
+    .bfp-root .bfp-table th {font-size:9px;}
+    .bfp-root .bfp-table th,.bfp-root .bfp-table td {padding:10px 4px;}
+    .bfp-table col:nth-child(1) {width:43%!important;}
+    .bfp-table col:nth-child(2) {width:12%!important;}
+    .bfp-table col:nth-child(3) {width:22%!important;}
+    .bfp-table col:nth-child(4) {width:23%!important;}
+    .bfp-summary {grid-template-columns:minmax(0,1fr);gap:16px;}
+    .bfp-summary>div:empty {display:none;}
+    .bfp-total strong {font-size:21px;white-space:normal;overflow-wrap:anywhere;}
+    .bfp-terms {flex-wrap:wrap;gap:16px;}
+    .bfp-terms>div {flex:1 1 120px;}
+    .bfp-signature {gap:12px;}
+    .bfp-sign-line {flex:1;min-width:0;}
+    .bfp-footer {flex-wrap:wrap;gap:8px;}
+  }
+}

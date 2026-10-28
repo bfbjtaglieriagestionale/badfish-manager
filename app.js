@@ -439,6 +439,7 @@ function render() {
   ).length;
   $("#navJobsCount").textContent = db.jobs.length;
   renderRecent();
+  bf99RenderDeliveries();
   renderJobs();
   renderFiles();
   bfRenderSummary();
@@ -447,6 +448,59 @@ function render() {
   bfRenderClients();
   bfRenderQuotes();
 }
+
+function bf99ProgressText(job) {
+  const p = BadfishProduction.progress(job);
+  return p.recorded ? `${p.completed}/${p.total} completati · ${p.remaining} da fare · ${p.rework} da rilavorare` : "Avanzamento non registrato";
+}
+function bf99ProductionPanel(job) {
+  const p = BadfishProduction.progress(job);
+  return `<section class="detail-section bf99-production" aria-labelledby="bf99ProductionTitle"><h4 id="bf99ProductionTitle">Avanzamento quantità</h4><p class="bf-help">Totale ordinato: <b>${p.total} pezzi</b>. I pezzi da rilavorare sono separati dai completati e da quelli ancora da fare.</p>${!p.recorded ? '<p class="bf-help">Avanzamento non ancora registrato.</p>' : ""}<form id="bf99ProductionForm"><div class="bf99-production-grid"><label class="field-label">Pezzi completati<input id="bf99Completed" type="number" min="0" max="${p.total}" step="1" required value="${p.completed}"></label><label class="field-label">Pezzi da rilavorare<input id="bf99Rework" type="number" min="0" max="${p.total}" step="1" required value="${p.rework}"></label><div><span>Ancora da fare</span><strong id="bf99Remaining" aria-live="polite">${p.remaining}</strong></div></div><div class="bf99-progress"><progress id="bf99ProgressBar" value="${p.completed}" max="${Math.max(1, p.total)}" aria-label="Pezzi completati"></progress><span id="bf99Percent">${p.percent}%</span></div><p id="bf99ProductionError" class="bf99-production-error" role="alert">${esc(p.error)}</p><p class="bf-help">Quando un pezzo rilavorato è pronto, diminuisci “da rilavorare” e aumenta “completati”. Lo stato della commessa si aggiorna dai dettagli.</p><button type="submit" class="btn primary">Salva avanzamento</button></form></section>`;
+}
+function bf99RenderDeliveries() {
+  const root = $("#bf99Deliveries");
+  if (!root) return;
+  const groups = BadfishProduction.deliveries(db.jobs);
+  const row = (job, overdue) => `<button type="button" class="bf99-delivery ${overdue ? "is-overdue" : job.dueDate === groups.start ? "is-today" : ""}" data-open="${esc(job.id)}"><span><b>${formatDate(job.dueDate)}</b><small>${overdue ? "In ritardo" : job.dueDate === groups.start ? "Oggi" : "Consegna prevista"}</small></span><span><b>${esc(job.code)} · ${esc(job.article)}</b><small>${esc(job.client)} · ${esc(job.status)}</small><small>${esc(bf99ProgressText(job))}</small></span><span>Apri ${icon("chevron")}</span></button>`;
+  root.innerHTML = `<span class="eyebrow">CONSEGNE</span><h3>Prossimi 7 giorni</h3><p class="bf-help">Da ${formatDate(groups.start)} a ${formatDate(groups.end)} · incluse le commesse completate ancora da consegnare.</p>${groups.overdue.length ? `<h4>Consegne scadute (${groups.overdue.length})</h4><div class="bf99-delivery-list">${groups.overdue.map((j) => row(j, true)).join("")}</div>` : ""}<h4>In programma (${groups.upcoming.length})</h4><div class="bf99-delivery-list">${groups.upcoming.map((j) => row(j, false)).join("") || '<p class="bf-help">Nessuna consegna prevista nei prossimi 7 giorni.</p>'}</div>`;
+}
+function bf99ProductionValues() {
+  const total = Number(db.jobs.find((j) => j.id === selectedJobId)?.quantity || 0);
+  const completed = $("#bf99Completed").valueAsNumber;
+  const rework = $("#bf99Rework").valueAsNumber;
+  return { total, completed, rework, error: BadfishProduction.validate(total, completed, rework) };
+}
+document.addEventListener("input", (event) => {
+  if (!event.target.matches("#bf99Completed,#bf99Rework")) return;
+  const p = bf99ProductionValues();
+  $("#bf99ProductionError").textContent = p.error;
+  $("#bf99Remaining").textContent = p.error ? "—" : p.total - p.completed - p.rework;
+  $("#bf99Percent").textContent = p.error ? "—" : `${p.total ? Math.round(p.completed / p.total * 100) : 0}%`;
+  $("#bf99ProgressBar").value = p.error ? 0 : p.completed;
+});
+document.addEventListener("submit", async (event) => {
+  if (event.target.id !== "bf99ProductionForm") return;
+  event.preventDefault();
+  const job = db.jobs.find((j) => j.id === selectedJobId);
+  if (!job) return;
+  const p = bf99ProductionValues();
+  if (p.error) { $("#bf99ProductionError").textContent = p.error; return; }
+  const previous = job.production;
+  const previousUpdated = job.updatedAt;
+  job.production = { completed: p.completed, rework: p.rework, updatedAt: now() };
+  job.updatedAt = now();
+  try {
+    await saveAndSync("Avanzamento salvato.");
+    if (selectedJobId === job.id) openDetail(job.id);
+  } catch (error) {
+    if (previous === undefined) delete job.production;
+    else job.production = previous;
+    job.updatedAt = previousUpdated;
+    toast("Avanzamento non salvato: " + error.message, true);
+  }
+});
+window.addEventListener("focus", () => bf99RenderDeliveries());
+document.addEventListener("visibilitychange", () => { if (!document.hidden) bf99RenderDeliveries(); });
 
 function fileCategories(job) {
   const set = new Set((job.files || []).map((f) => f.category));
@@ -486,7 +540,7 @@ function renderJobs() {
     ? jobs
         .map(
           (j) =>
-            `<article class="job-card" data-open="${esc(j.id)}"><div class="job-card-head"><div><div class="job-code">${esc(j.code)}</div><div class="job-client">${esc(j.client)}</div></div><span class="status ${statusClass(j.status)} ${isOverdue(j) ? "overdue" : ""}">${isOverdue(j) ? "In ritardo" : esc(j.status)}</span></div><div class="job-article">${esc(j.article)}</div><div class="job-meta"><div><span>Materiale</span><strong>${esc(j.material || "—")}</strong></div><div><span>Q.tà</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div></div><div class="job-file-strip">${fileCategories(j)}</div><div class="job-actions"><span class="file-count">${(j.files || []).length} ${(j.files || []).length === 1 ? "file" : "file"}</span><span class="open-link">Apri ${icon("chevron")}</span></div></article>`,
+            `<article class="job-card" data-open="${esc(j.id)}"><div class="job-card-head"><div><div class="job-code">${esc(j.code)}</div><div class="job-client">${esc(j.client)}</div></div><span class="status ${statusClass(j.status)} ${isOverdue(j) ? "overdue" : ""}">${isOverdue(j) ? "In ritardo" : esc(j.status)}</span></div><div class="job-article">${esc(j.article)}</div><div class="job-meta"><div><span>Materiale</span><strong>${esc(j.material || "—")}</strong></div><div><span>Q.tà</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div></div><div class="job-file-strip">${fileCategories(j)}</div>${j.production ? `<div class="bf99-card-progress">${esc(bf99ProgressText(j))}</div>` : ""}<div class="job-actions"><span class="file-count">${(j.files || []).length} ${(j.files || []).length === 1 ? "file" : "file"}</span><span class="open-link">Apri ${icon("chevron")}</span></div></article>`,
         )
         .join("")
     : `<div class="empty full-span">Nessuna commessa trovata.</div>`;
@@ -622,7 +676,7 @@ function openDetail(id) {
   if (!j) return;
   const files = j.files || [];
   $("#detailContent").innerHTML =
-    `<div class="detail-shell"><div class="bf94-mobile-detail-bar"><span class="eyebrow" title="${esc(j.code)}">COMMESSA ${esc(j.code)}</span><button type="button" class="icon-btn bf94-mobile-close" data-close-detail aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div>${window.BadfishRepeats?.panel(j) || ""}<div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div><section class="detail-section" id="bf77-status"><h4>Informazioni commessa</h4><label class="field-label">Codice commessa *<input id="detailCode" value="${esc(j.code || "")}" required></label><label class="field-label">Cliente *<input id="detailClient" value="${esc(j.client || "")}" required></label><label class="field-label">Articolo *<input id="detailArticle" value="${esc(j.article || "")}" required></label><label class="field-label">Materiale<input id="detailMaterial" value="${esc(j.material || "")}"></label><label class="field-label">Quantità<input id="detailQuantity" type="number" min="0" step="1" value="${esc(j.quantity ?? 0)}"></label><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
+    `<div class="detail-shell"><div class="bf94-mobile-detail-bar"><span class="eyebrow" title="${esc(j.code)}">COMMESSA ${esc(j.code)}</span><button type="button" class="icon-btn bf94-mobile-close" data-close-detail aria-label="Chiudi commessa">${icon("x")}</button></div><div class="detail-top"><div class="detail-title"><span class="eyebrow">COMMESSA ${esc(j.code)}</span><h2>${esc(j.article)}</h2><div class="detail-sub">${esc(j.client)} · ${esc(j.material || "Materiale non specificato")}</div></div><button type="button" class="icon-btn detail-close-btn" id="closeDetail" aria-label="Chiudi commessa">${icon("x")}</button></div>${window.BadfishRepeats?.panel(j) || ""}<div class="detail-summary"><div><span>Stato</span><strong>${esc(j.status)}</strong></div><div><span>Quantità</span><strong>${esc(j.quantity || 0)}</strong></div><div><span>Consegna</span><strong>${formatDate(j.dueDate)}</strong></div><div><span>File</span><strong>${files.length}</strong></div></div><nav class="bf77-jump" aria-label="Sezioni commessa"><a href="#bf77-tech">1 · Ore e misure</a><a href="#bf77-files">2 · File del lavoro</a><a href="#bf77-status">3 · Stato e note</a></nav><div id="bf77-tech" class="bf77-section-heading"><span>01</span><div><h3>Produzione e tempi</h3><p>Grezzi Fusion e ore lavorate</p></div></div>${bfWorkPanel(j)}${bfBusinessPanel(j)}<div id="bf77-files" class="bf77-section-heading"><span>02</span><div><h3>Documenti della commessa</h3><p>Caricamento e archivio dei file</p></div></div><div class="detail-grid"><div><section class="detail-section"><h4>Carica file</h4><div class="upload-grid"><button class="upload-btn fusion-upload" data-upload="fusion"><b>+ Progetto Fusion 360</b><span>.f3d, .f3z · versione precedente archiviata</span></button><button class="upload-btn" data-upload="step"><b>+ File STEP</b><span>.stp, .step</span></button><button class="upload-btn" data-upload="nc"><b>+ Programma NC</b><span>.nc, .tap, .cnc</span></button><button class="upload-btn" data-upload="drawings"><b>+ Disegni / PDF</b><span>.pdf, .dwg, .dxf</span></button><button class="upload-btn" data-upload="photos"><b>+ Fotografie</b><span>JPG, PNG, HEIC...</span></button></div><p class="upload-note">I file vengono caricati direttamente nel Google Drive Badfish.</p></section><section class="detail-section"><h4>Archivio della commessa</h4><div class="file-list">${files.length ? files.map((f) => `<div class="file-row"><div class="file-info"><strong>${esc(f.name)}</strong><span>${categoryLabel(f.category)} · ${formatSize(f.size)} · ${formatDate(f.addedAt)}</span></div><div class="file-actions">${fileButtons(f)}</div></div>`).join("") : `<div class="empty">Non sono ancora stati caricati file.</div>`}</div></section></div><div>${bf99ProductionPanel(j)}<section class="detail-section" id="bf77-status"><h4>Informazioni commessa</h4><label class="field-label">Codice commessa *<input id="detailCode" value="${esc(j.code || "")}" required></label><label class="field-label">Cliente *<input id="detailClient" value="${esc(j.client || "")}" required></label><label class="field-label">Articolo *<input id="detailArticle" value="${esc(j.article || "")}" required></label><label class="field-label">Materiale<input id="detailMaterial" value="${esc(j.material || "")}"></label><label class="field-label">Quantità<input id="detailQuantity" type="number" min="0" step="1" value="${esc(j.quantity ?? 0)}"></label><label class="field-label">Stato<select id="detailStatus">${STATUSES.map((s) => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("")}</select></label><label class="field-label">Data consegna<input id="detailDueDate" type="date" value="${esc(j.dueDate || "")}"></label><label class="field-label">Note<textarea id="detailNotes" rows="7">${esc(j.notes || "")}</textarea></label><button id="saveDetailBtn" class="btn primary wide">Salva modifiche</button></section><section class="detail-section"><h4>Google Drive</h4><div class="path-box">${j.driveFolderId ? "La cartella cloud della commessa è collegata." : "La cartella verrà creata alla prima sincronizzazione o al primo upload."}</div>${j.driveFolderId ? `<button id="openDriveFolderBtn" class="btn subtle wide">${icon("external")} Apri cartella Drive</button>` : ""}</section><button id="deleteJobBtn" class="btn danger wide delete-gap">${icon("trash")} Elimina dal gestionale</button></div></div></div>`;
   const closeBtn = $("#closeDetail");
   if (closeBtn) {
     closeBtn.addEventListener(
@@ -1564,6 +1618,10 @@ function initEvents() {
         return toast("Esiste già una commessa con questo codice.", true);
       if (quantityInput.value !== "" && (!quantityInput.validity.valid || !Number.isFinite(Number(quantityInput.value))))
         return toast("Inserisci una quantità intera pari o superiore a zero.", true);
+      if (job.production) {
+        const issue = BadfishProduction.validate(Number(quantityInput.value || 0), Number(job.production.completed || 0), Number(job.production.rework || 0));
+        if (issue) return toast(issue + " Aggiorna prima l’avanzamento.", true);
+      }
       if (bfClientKey(client) !== bfClientKey(job.client)) job.clientId = bfClientIdForName(client);
       job.code = code;
       job.client = client;

@@ -1,0 +1,23 @@
+.bf99-deliveries { margin: 0 0 24px; padding: 24px; }
+.bf99-deliveries h3, .bf99-production h4 { margin: 0 0 8px; }
+.bf99-deliveries h4 { margin: 18px 0 10px; }
+.bf99-delivery-list { display: grid; gap: 8px; }
+.bf99-delivery { width: 100%; display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; gap: 16px; text-align: left; align-items: center; padding: 14px; border: 1px solid var(--line, #dce1d9); border-radius: 12px; background: var(--surface, #fff); color: inherit; font: inherit; cursor: pointer; }
+.bf99-delivery span { min-width: 0; overflow-wrap: anywhere; }
+.bf99-delivery small { display: block; margin-top: 4px; color: var(--muted, #657068); }
+.bf99-delivery.is-overdue { border-left: 4px solid #a64335; }
+.bf99-delivery.is-today { border-left: 4px solid #9b721f; }
+.bf99-delivery:focus-visible { outline: 3px solid #587760; outline-offset: 3px; }
+.bf99-production { margin-bottom: 20px; }
+.bf99-production-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.bf99-production-grid input { width: 100%; min-width: 0; }
+.bf99-production-grid strong { display: block; padding: 12px 0; font-size: 24px; }
+.bf99-progress { display: flex; gap: 12px; align-items: center; margin: 10px 0; }
+.bf99-progress progress { width: 100%; accent-color: #4d6b55; height: 10px; }
+.bf99-production-error { color: #a13427; }
+.bf99-card-progress { margin: 0 0 12px; font-size: 12px; color: var(--muted, #657068); }
+@media (max-width: 600px) {
+  .bf99-deliveries { padding: 16px; }
+  .bf99-delivery { grid-template-columns: 1fr; gap: 6px; }
+  .bf99-production-grid { grid-template-columns: 1fr; gap: 8px; }
+}

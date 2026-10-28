@@ -1,0 +1,14 @@
+.bf99-deliveries h3 { margin: 0 0 8px; }
+.bf99-deliveries { margin: 0 0 24px; padding: 24px; }
+.bf99-deliveries h4 { margin: 18px 0 10px; }
+.bf99-delivery-list { display: grid; gap: 8px; }
+.bf99-delivery { width: 100%; display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; gap: 16px; text-align: left; align-items: center; padding: 14px; border: 1px solid var(--line, #dce1d9); border-radius: 12px; background: var(--surface, #fff); color: inherit; font: inherit; cursor: pointer; }
+.bf99-delivery span { min-width: 0; overflow-wrap: anywhere; }
+.bf99-delivery small { display: block; margin-top: 4px; color: var(--muted, #657068); }
+.bf99-delivery.is-overdue { border-left: 4px solid #a64335; }
+.bf99-delivery.is-today { border-left: 4px solid #9b721f; }
+.bf99-delivery:focus-visible { outline: 3px solid #587760; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .bf99-deliveries { padding: 16px; }
+  .bf99-delivery { grid-template-columns: 1fr; gap: 6px; }
+}

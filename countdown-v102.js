@@ -9,7 +9,7 @@
   function remaining(timer) { return timer?.endAt ? Math.max(0, Math.ceil((timer.endAt-Date.now())/1000)) : Math.max(0, timer?.remaining || 0); }
   function panel(job) {
     const seconds = reference(job), t = job.countdown;
-    return `<section class="detail-section"><h4>Conto alla rovescia CNC</h4><p class="bf-help">Tempo CNC precedente: ${bfClockFormat(seconds)}. Durata riferita alla lavorazione precedente: verifica quantità e setup. Non registra ore lavorate.</p><label class="field-label">Durata in minuti<input id="bf102Minutes" type="number" min="0.0167" step="any" value="${Math.max(1,Math.round(seconds/60*100)/100)}" ${t?.endAt || t?.remaining ? 'disabled' : ''}></label><strong id="bf102Clock" role="timer">${bfClockFormat(remaining(t))}</strong><p id="bf102State" role="status">${t?.finished ? 'Tempo terminato' : t?.endAt ? 'In corso' : t?.remaining ? 'In pausa' : 'Pronto'}</p><div class="bf-clock-actions"><button type="button" class="btn primary" data-countdown="start">${t?.endAt ? 'In corso' : t?.remaining ? 'Riprendi' : 'Avvia conto alla rovescia'}</button><button type="button" class="btn secondary" data-countdown="pause">Pausa</button><button type="button" class="btn subtle" data-countdown="cancel">Annulla</button></div><button type="button" class="btn subtle" data-countdown="notify">Abilita notifiche</button><p class="bf-help">L’avviso sonoro richiede la pagina aperta. A telefono bloccato o app chiusa l’avviso non è garantito; alla riapertura viene rilevata la scadenza.</p></section>`;
+    return `<section class="bf103-cnc"><div class="bf103-heading"><span class="eyebrow">LAVORAZIONE CNC</span><span class="bf103-state">${t?.finished ? 'Tempo terminato' : t?.endAt ? 'In corso' : t?.remaining ? 'In pausa' : 'Pronta'}</span></div><h3>${esc(t?.label || job.article || 'Lavorazione')}</h3><p class="bf-help">${seconds ? `Riferimento precedente: ${bfClockFormat(seconds)}` : 'Imposta la durata prevista della lavorazione.'}</p><div class="bf103-fields"><label class="field-label">Nome del passaggio<input id="bf103Label" value="${esc(t?.label || job.article || '')}" maxlength="120" ${t?.endAt || t?.remaining ? 'disabled' : ''}></label><label class="field-label">Durata · minuti<input id="bf102Minutes" type="number" min="0.0167" step="any" value="${Math.max(1,Math.round(seconds/60*100)/100)}" ${t?.endAt || t?.remaining ? 'disabled' : ''}></label></div><strong id="bf102Clock" class="bf103-clock" role="timer">${bfClockFormat(remaining(t) || (!t ? seconds : 0))}</strong><p id="bf102State" role="status">${t?.finished ? 'Controlla la macchina e conferma la fine.' : t?.endAt ? 'Fine prevista alle ' + new Date(t.endAt).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : t?.remaining ? 'Lavorazione in pausa' : 'Pronta per partire'}</p><div class="bf-clock-actions">${!t?.endAt && !t?.finished ? `<button type="button" class="btn primary" data-countdown="start">${t?.remaining ? 'Riprendi' : 'Avvia lavorazione'}</button>` : ''}${t?.endAt ? '<button type="button" class="btn secondary" data-countdown="pause">Pausa</button>' : ''}${t ? `<button type="button" class="btn subtle" data-countdown="cancel">${t.finished ? 'Conferma fine' : 'Annulla'}</button>` : ''}</div><details><summary>Avvisi e informazioni</summary><button type="button" class="btn subtle" data-countdown="notify">Abilita avvisi locali</button><p class="bf-help">Le ore effettive restano separate. La durata precedente può comprendere più pezzi o passaggi: controllala prima di avviare. Gli avvisi a pagina chiusa richiedono il servizio push, non ancora collegato.</p></details></section>`;
   }
   const original = bfTimerPanel;
   bfTimerPanel = function(job) { const html = original(job); const at = html.lastIndexOf("</section>"); return html.slice(0, at) + panel(job) + html.slice(at); };
@@ -32,12 +32,12 @@
       const seconds=job.countdown?.remaining || Math.round(Number(document.getElementById('bf102Minutes').value)*60);
       if(!Number.isSafeInteger(seconds)||seconds<=0||seconds>31536000)return toast('Inserisci una durata valida, entro un anno.',true);
       try { audio ||= new (window.AudioContext || window.webkitAudioContext)();await audio.resume(); } catch {}
-      job.countdown={endAt:Date.now()+seconds*1000,remaining:seconds,finished:false};
+      job.countdown={endAt:Date.now()+seconds*1000,remaining:seconds,finished:false,label:job.countdown?.label || document.getElementById("bf103Label").value.trim()};
     } else if(action==='pause') {
       if(!job.countdown?.endAt)return;
       const seconds=remaining(job.countdown);
       if(!seconds) {tick();return;}
-      job.countdown={remaining:seconds,finished:false};
+      job.countdown={...job.countdown,endAt:null,remaining:seconds,finished:false};
     } else delete job.countdown;
     job.updatedAt=now();
     try {await saveAndSync('Conto alla rovescia salvato.');if(selectedJobId===job.id)openDetail(job.id);} catch {job.countdown=previous;job.updatedAt=updated;toast('Impossibile salvare il conto alla rovescia.',true);}
@@ -47,14 +47,23 @@
       const t=job.countdown;
       if(!t?.endAt || remaining(t)>0)continue;
       const old={...t},updated=job.updatedAt;
-      job.countdown={remaining:0,finished:true};job.updatedAt=now();
+      job.countdown={...t,endAt:null,remaining:0,finished:true};job.updatedAt=now();
       try {persistLocal({renderNow:false});}catch {job.countdown=old;job.updatedAt=updated;continue;}
       sound();toast(`Tempo CNC terminato: ${job.code}`);
       if('Notification' in window && Notification.permission==='granted')try {const n=new Notification('Badfish · Tempo CNC terminato',{body:`Commessa ${job.code}`,tag:`cnc-${job.id}`});n.onclick=()=>{window.focus();openDetail(job.id);};} catch {}
     }
     const job=db.jobs.find(j=>j.id===selectedJobId),clock=document.getElementById('bf102Clock'),state=document.getElementById('bf102State');
     if(clock)clock.textContent=bfClockFormat(remaining(job?.countdown));
-    if(state&&job?.countdown?.finished)state.textContent='Tempo terminato';
+    if(state&&job?.countdown?.finished)state.textContent='Tempo terminato: controlla la macchina.';
+    renderActive();
   }
+  function renderActive() {
+    let root=document.getElementById('bf103Active');
+    if(!root) { const anchor=document.getElementById('bf99Deliveries');if(!anchor)return;root=document.createElement('section');root.id='bf103Active';root.className='panel bf103-active';anchor.before(root); }
+    const jobs=db.jobs.filter(j=>j.countdown).sort((a,b)=>(a.countdown.endAt || Infinity)-(b.countdown.endAt || Infinity));
+    const html=`<span class="eyebrow">AL BANCO</span><h3>Lavorazioni CNC</h3>${jobs.length ? jobs.map(j=>`<button type="button" class="bf103-machine ${j.countdown.finished ? 'is-finished' : ''}" data-open="${esc(j.id)}"><span><b>${esc(j.code)} · ${esc(j.countdown.label || j.article)}</b><small>${j.countdown.finished ? 'Tempo terminato · controlla la macchina' : j.countdown.endAt ? 'Fine prevista alle '+new Date(j.countdown.endAt).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : 'In pausa'}</small></span><strong>${bfClockFormat(remaining(j.countdown))}</strong></button>`).join('') : '<p class="bf-help">Nessuna lavorazione avviata. Apri una commessa e vai in Ore di lavoro per partire.</p>'}`;
+    if(root.innerHTML!==html)root.innerHTML=html;
+  }
+  renderActive();
   setInterval(tick,1000);window.addEventListener('focus',tick);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
 })();

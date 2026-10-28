@@ -1,0 +1,68 @@
+/* v104 — rifiniture Atelier. Le regole di stampa restano invariate. */
+@media screen {
+  :root {--muted:#58645a!important;--muted-2:#626e63!important;}
+  .bf104-dashboard-main {display:grid;gap:20px;min-width:0;align-content:start;}
+  .bf104-dashboard-main .bf77-report {margin-top:0!important;}
+  .dashboard-grid {align-items:start;}
+  .bf-help,.quick-row small,.recent-code>span,.recent-main>span,
+  .bf-summary-card small,.stat-card small,.bf77-disclaimer,
+  .bf80-panel>p,.bf80-note,.bf92-scroll-hint,.bf92-current small,
+  .view-intro p,.bf80-head p,.welcome-card p {
+    color:#58645a!important;
+    font-size:12px!important;
+    line-height:1.6!important;
+  }
+  .stat-card span,.bf-summary-card>span {color:#58645a!important;font-size:12px!important;}
+  .file-pill {font-size:10px!important;color:#58634f!important;}
+  .sidebar-drive>span {color:#c3cec2!important;font-size:11px!important;}
+  .eyebrow,.page-kicker {font-size:10px!important;}
+  #statsView .bf80-bar-item small {font-size:12px!important;line-height:1.4;color:#4e5c50!important;}
+  #statsView .bf80-bars {min-width:420px!important;gap:8px;}
+  #statsView .bf92-daily {min-width:840px!important;grid-auto-columns:minmax(23px,1fr);}
+  .bf92-chart-scroll {overscroll-behavior-x:contain;scrollbar-width:thin;}
+  .bf92-scroll-hint {display:block;margin-top:8px;}
+  @media(min-width:861px) {
+    .dashboard-side .panel {padding:20px!important;}
+    .quick-row {padding:11px 0!important;}
+    .dashboard-grid {grid-template-columns:minmax(0,1.75fr) minmax(270px,.72fr);}
+  }
+  @media(max-width:860px) {
+    .bf104-dashboard-main {gap:15px;}
+    .bf77-report-filters label,.bf77-report-row small {font-size:12px!important;}
+    .bf77-disclaimer {font-size:12px!important;}
+  }
+  /* Su telefono ogni voce ha descrizione e tre importi leggibili,
+     mantenendo la tabella originale nel PDF e su PC. */
+  @media(max-width:700px) {
+    .bf77-paper-content .bfp-root {font-size:13px;}
+    .bfp-root .bfp-table {display:block;width:100%;font-size:13px!important;}
+    .bfp-root .bfp-table colgroup {display:none;}
+    .bfp-root .bfp-table thead {
+      position:absolute;width:1px;height:1px;padding:0;overflow:hidden;
+      clip-path:inset(50%);white-space:nowrap;
+    }
+    .bfp-root .bfp-table tbody {display:block;width:100%;}
+    .bfp-root .bfp-table tbody tr {
+      display:grid;grid-template-columns:minmax(0,.7fr) repeat(2,minmax(0,1.15fr));
+      gap:12px 8px;padding:14px 0;border-bottom:1px solid #d7dcd5;
+    }
+    .bfp-root .bfp-table td {
+      display:block;width:auto!important;min-width:0;padding:0!important;border:0;
+      font-size:13px!important;text-align:left!important;white-space:normal!important;
+      overflow-wrap:anywhere;line-height:1.55;
+    }
+    .bfp-root .bfp-table td:first-child {grid-column:1/-1;}
+    .bfp-root .bfp-table td:not(:first-child)::before {
+      display:block;font-size:11px;font-weight:600;color:#4f5a50;margin-bottom:4px;
+    }
+    .bfp-root .bfp-table td:nth-child(2)::before {content:'Quantità';}
+    .bfp-root .bfp-table td:nth-child(3)::before {content:'Prezzo unit.';}
+    .bfp-root .bfp-table td:nth-child(4)::before {content:'Importo';}
+    .bfp-root .bfp-table td small {font-size:12px!important;}
+    .bfp-tax-note,.bfp-root .bfp-footer,.bfp-root .bfp-signature,
+    .bfp-root .bfp-company,.bfp-root .bfp-number span {font-size:12px!important;line-height:1.6;}
+  }
+  @media(prefers-reduced-motion:reduce) {
+    .view,.panel,.job-card,.modal,.detail-drawer {animation:none!important;transition:none!important;}
+  }
+}

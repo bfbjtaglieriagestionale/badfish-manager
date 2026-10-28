@@ -104,7 +104,8 @@ let selectedJobId = null;
 let driveRefs = null;
 let pendingUploadCategory = null;
 let deferredInstallPrompt = null;
-let syncing = false;
+let syncPromise = null;
+let syncRequested = false;
 let sessionGoogleEmail = "";
 let currentView = "dashboard";
 
@@ -702,13 +703,42 @@ async function connectDrive({ email = "", silent = false } = {}) {
     return false;
   }
 }
+// Ogni richiesta attende anche le modifiche arrivate durante un upload.
+// Una sola scrittura Drive alla volta; gli errori conservano i dati locali.
 async function syncDrive(showToast = false) {
-  if (syncing) return;
+  if (syncPromise) {
+    syncRequested = true;
+    return syncPromise;
+  }
   if (!BadfishDrive.isConnected()) {
     if (showToast) toast("Collega prima Google Drive.", true);
     return;
   }
-  syncing = true;
+  syncRequested = true;
+  syncPromise = (async () => {
+    try {
+      do {
+        syncRequested = false;
+        await syncDrivePass();
+        if (syncRequested && (!BadfishDrive.isConnected() || !navigator.onLine)) {
+          throw new Error("Ultime modifiche salvate sul dispositivo. Ricollega Drive e riprova la sincronizzazione.");
+        }
+      } while (syncRequested);
+      if (showToast && BadfishDrive.isConnected() && navigator.onLine) toast("Google Drive sincronizzato.");
+    } catch (err) {
+      setSyncState("error", "Sincronizzazione da completare", "Dati locali conservati");
+      if (showToast) toast(err.message, true);
+      throw err;
+    } finally {
+      syncPromise = null;
+    }
+  })();
+  return syncPromise;
+}
+async function syncDrivePass() {
+  if (!BadfishDrive.isConnected()) {
+    return;
+  }
   try {
     setSyncState("syncing", "Sincronizzazione…", "Google Drive");
     driveRefs = await BadfishDrive.ensureRootStructure();
@@ -757,8 +787,12 @@ async function syncDrive(showToast = false) {
       "application/json",
     );
     const stamp = now();
-    localStorage.setItem(LAST_SYNC_KEY, stamp);
     render();
+    if (syncRequested) {
+      setSyncState("syncing", "Salvataggio ultime modifiche…", "Sincronizzazione in corso");
+      return;
+    }
+    localStorage.setItem(LAST_SYNC_KEY, stamp);
     setSyncState(
       "ok",
       "Drive sincronizzato",
@@ -767,18 +801,14 @@ async function syncDrive(showToast = false) {
         minute: "2-digit",
       }).format(new Date(stamp)),
     );
-    if (showToast) toast("Google Drive sincronizzato.");
   } catch (err) {
     setSyncState("error", "Errore sincronizzazione", "Dati locali conservati");
-    if (showToast) toast(err.message, true);
     throw err;
-  } finally {
-    syncing = false;
   }
 }
 async function saveAndSync(message = "Salvato.") {
   persistLocal();
-  if (BadfishDrive.isConnected() && navigator.onLine) {
+  if (syncPromise || (BadfishDrive.isConnected() && navigator.onLine)) {
     try {
       await syncDrive(false);
       toast(message);

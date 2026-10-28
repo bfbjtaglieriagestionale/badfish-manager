@@ -71,6 +71,7 @@
     remap(job.rawPieces);
     for (const piece of job.rawPieces) piece.id = uid("piece");
     job.status = "Da progettare";
+    job.cncReferenceSeconds = (source.workSessions || []).filter(s => s.phase === "Lavorazione CNC").reduce((n, s) => n + Math.max(0, Number(s.seconds ?? Number(s.minutes || 0) * 60) || 0), 0) || Number(source.cncReferenceSeconds) || 0;
     job.workSessions = [];
     job.repeatedFrom = { id: source.id, code: source.code };
     // job is a fresh whitelist of form fields: no old folders, timer, quote or dates.

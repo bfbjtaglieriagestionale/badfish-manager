@@ -1,4 +1,4 @@
-const CACHE = "badfish-manager-v101";
+const CACHE = "badfish-manager-v102";
 const SHELL = [
   "./",
   "./index.html",
@@ -11,7 +11,7 @@ const SHELL = [
   "./atelier-v93.css?v=93",
   "./mobile-v94.css?v=94",
   "./ui-v94.js?v=94",
-  "./repeat-jobs.js?v=95",
+  "./repeat-jobs.js?v=102",
   "./repeat-jobs.css?v=95",
   "./quote-pdf-v96.css?v=96",
   "./responsive-v97.css?v=97",
@@ -22,9 +22,10 @@ const SHELL = [
   "./vendor/fflate-0.8.2.js",
   "./vendor/fzstd-0.1.1.js",
   "./fusion-stock.js?v=90",
-  "./production-v101.js?v=101",
-  "./production-v101.css?v=101",
-  "./app.js?v=101",
+  "./production-v101.js?v=102",
+  "./production-v101.css?v=102",
+  "./app.js?v=102",
+  "./countdown-v102.js?v=102",
   "./backup.js?v=78",
   "./stats.js?v=92",
   "./mobile-nav.js?v=94",

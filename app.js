@@ -455,7 +455,7 @@ function bf99ProgressText(job) {
 }
 function bf99ProductionPanel(job) {
   const p = BadfishProduction.progress(job);
-  return `<section class="detail-section bf99-production" aria-labelledby="bf99ProductionTitle"><h4 id="bf99ProductionTitle">Avanzamento quantità</h4><p class="bf-help">Totale ordinato: <b>${p.total} pezzi</b>. I pezzi da rilavorare sono separati dai completati e da quelli ancora da fare.</p>${!p.recorded ? '<p class="bf-help">Avanzamento non ancora registrato.</p>' : ""}<form id="bf99ProductionForm"><div class="bf99-production-grid"><label class="field-label">Pezzi completati<input id="bf99Completed" type="number" min="0" max="${p.total}" step="1" required value="${p.completed}"></label><label class="field-label">Pezzi da rilavorare<input id="bf99Rework" type="number" min="0" max="${p.total}" step="1" required value="${p.rework}"></label><div><span>Ancora da fare</span><strong id="bf99Remaining" aria-live="polite">${p.remaining}</strong></div></div><div class="bf99-progress"><progress id="bf99ProgressBar" value="${p.completed}" max="${Math.max(1, p.total)}" aria-label="Pezzi completati"></progress><span id="bf99Percent">${p.percent}%</span></div><p id="bf99ProductionError" class="bf99-production-error" role="alert">${esc(p.error)}</p><p class="bf-help">Quando un pezzo rilavorato è pronto, diminuisci “da rilavorare” e aumenta “completati”. Lo stato della commessa si aggiorna dai dettagli.</p><button type="submit" class="btn primary">Salva avanzamento</button></form></section>`;
+  return `<section class="detail-section bf99-production" aria-labelledby="bf99ProductionTitle"><h4 id="bf99ProductionTitle">Avanzamento quantità</h4><p class="bf-help">Quantità ordinata: <b>${esc(job.quantity || 0)}</b>. Il totale dei pezzi da lavorare è indipendente dalla quantità ordinata. I pezzi da rilavorare sono separati dai completati e da quelli ancora da fare.</p>${!p.recorded ? '<p class="bf-help">Avanzamento non ancora registrato.</p>' : ""}<form id="bf99ProductionForm"><label class="field-label">Totale pezzi da lavorare<input id="bf99Total" type="number" min="0" step="1" required value="${p.total}"></label><div class="bf99-production-grid"><label class="field-label">Pezzi completati<input id="bf99Completed" type="number" min="0" step="1" required value="${p.completed}"></label><label class="field-label">Pezzi da rilavorare<input id="bf99Rework" type="number" min="0" step="1" required value="${p.rework}"></label><div><span>Ancora da fare</span><strong id="bf99Remaining" aria-live="polite">${p.remaining}</strong></div></div><div class="bf99-progress"><progress id="bf99ProgressBar" value="${p.completed}" max="${Math.max(1, p.total)}" aria-label="Pezzi completati"></progress><span id="bf99Percent">${p.percent}%</span></div><p id="bf99ProductionError" class="bf99-production-error" role="alert">${esc(p.error)}</p><p class="bf-help">Quando un pezzo rilavorato è pronto, diminuisci “da rilavorare” e aumenta “completati”. Lo stato della commessa si aggiorna dai dettagli.</p><button type="submit" class="btn primary">Salva avanzamento</button></form></section>`;
 }
 function bf99RenderDeliveries() {
   const root = $("#bf99Deliveries");
@@ -465,17 +465,18 @@ function bf99RenderDeliveries() {
   root.innerHTML = `<span class="eyebrow">CONSEGNE</span><h3>Prossimi 7 giorni</h3><p class="bf-help">Da ${formatDate(groups.start)} a ${formatDate(groups.end)} · incluse le commesse completate ancora da consegnare.</p>${groups.overdue.length ? `<h4>Consegne scadute (${groups.overdue.length})</h4><div class="bf99-delivery-list">${groups.overdue.map((j) => row(j, true)).join("")}</div>` : ""}<h4>In programma (${groups.upcoming.length})</h4><div class="bf99-delivery-list">${groups.upcoming.map((j) => row(j, false)).join("") || '<p class="bf-help">Nessuna consegna prevista nei prossimi 7 giorni.</p>'}</div>`;
 }
 function bf99ProductionValues() {
-  const total = Number(db.jobs.find((j) => j.id === selectedJobId)?.quantity || 0);
+  const total = $("#bf99Total").valueAsNumber;
   const completed = $("#bf99Completed").valueAsNumber;
   const rework = $("#bf99Rework").valueAsNumber;
   return { total, completed, rework, error: BadfishProduction.validate(total, completed, rework) };
 }
 document.addEventListener("input", (event) => {
-  if (!event.target.matches("#bf99Completed,#bf99Rework")) return;
+  if (!event.target.matches("#bf99Total,#bf99Completed,#bf99Rework")) return;
   const p = bf99ProductionValues();
   $("#bf99ProductionError").textContent = p.error;
   $("#bf99Remaining").textContent = p.error ? "—" : p.total - p.completed - p.rework;
   $("#bf99Percent").textContent = p.error ? "—" : `${p.total ? Math.round(p.completed / p.total * 100) : 0}%`;
+  $("#bf99ProgressBar").max = Math.max(1, p.total || 0);
   $("#bf99ProgressBar").value = p.error ? 0 : p.completed;
 });
 document.addEventListener("submit", async (event) => {
@@ -487,7 +488,7 @@ document.addEventListener("submit", async (event) => {
   if (p.error) { $("#bf99ProductionError").textContent = p.error; return; }
   const previous = job.production;
   const previousUpdated = job.updatedAt;
-  job.production = { completed: p.completed, rework: p.rework, updatedAt: now() };
+  job.production = { total: p.total, completed: p.completed, rework: p.rework, updatedAt: now() };
   job.updatedAt = now();
   try {
     await saveAndSync("Avanzamento salvato.");
@@ -1618,10 +1619,6 @@ function initEvents() {
         return toast("Esiste già una commessa con questo codice.", true);
       if (quantityInput.value !== "" && (!quantityInput.validity.valid || !Number.isFinite(Number(quantityInput.value))))
         return toast("Inserisci una quantità intera pari o superiore a zero.", true);
-      if (job.production) {
-        const issue = BadfishProduction.validate(Number(quantityInput.value || 0), Number(job.production.completed || 0), Number(job.production.rework || 0));
-        if (issue) return toast(issue + " Aggiorna prima l’avanzamento.", true);
-      }
       if (bfClientKey(client) !== bfClientKey(job.client)) job.clientId = bfClientIdForName(client);
       job.code = code;
       job.client = client;

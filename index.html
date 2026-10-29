@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://accounts.google.com; connect-src 'self' https://www.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+      content="default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://accounts.google.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"
     />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta
@@ -38,7 +38,7 @@
       sizes="180x180"
       href="./assets/apple-touch-icon.png?v=91"
     />
-    <script src="./config.js?v=62"></script>
+    <script src="./config.js?v=105"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="./styles.css?v=92" />
     <link rel="stylesheet" href="./atelier-v93.css?v=93" />
@@ -49,6 +49,7 @@
     <link rel="stylesheet" href="./production-v101.css?v=104" />
   <link rel="stylesheet" href="./cnc-v103.css?v=104" />
     <link rel="stylesheet" href="./corrections-v104.css?v=104" />
+    <link rel="stylesheet" href="./features-v105.css?v=105" />
 </head>
   <body>
     <!-- Icon sprite: nessuna dipendenza esterna, funziona anche offline. -->
@@ -199,7 +200,7 @@
             <svg><use href="#i-refresh" /></svg> Sincronizza
           </button>
         </div>
-        <div class="sidebar-version">BFBJ · Gestionale <b>v10.4</b></div>
+        <div class="sidebar-version">BFBJ · Gestionale <b>v10.5</b></div>
       </aside>
 
       <main class="main-shell">
@@ -671,6 +672,11 @@
                     style="display: none"
                   />
                 </div>
+                <div class="settings-actions">
+                  <label id="bf105RestoreLabel" class="btn secondary" for="bf105RestoreFile" tabindex="0">Recupera da un backup</label>
+                  <input id="bf105RestoreFile" type="file" accept=".json,application/json" hidden />
+                  <button id="bf105SafetyDownload" type="button" class="btn subtle" hidden>Scarica copia prima del recupero</button>
+                </div>
                 <p id="bfBackupStatus" role="status" class="settings-note">
                   Nessun backup verificato.
                 </p>
@@ -681,6 +687,24 @@
                 >
               </article>
 
+              <article class="panel settings-card" id="bf105MachinesSettings">
+                <div class="settings-copy"><span class="eyebrow">LABORATORIO</span><h3>Le tue macchine</h3><p>Aggiungi le macchine e assegnale nella scheda Lavorazione CNC. Pause e fine da confermare mantengono l’occupazione.</p></div>
+                <form id="bf105MachineForm" class="bf105-inline"><label class="field-label">Nome macchina<input name="name" required maxlength="80" placeholder="Es. CNC 1" /></label><button class="btn primary" type="submit">Aggiungi macchina</button></form>
+                <div id="bf105MachinesList"></div>
+                <small class="settings-note">L’elenco viene sincronizzato con Drive. Se due dispositivi assegnano la stessa macchina mentre sono scollegati, la home segnala il conflitto dopo la sincronizzazione.</small>
+              </article>
+              <article class="panel settings-card" id="bf105PushSettings">
+                <div class="settings-copy"><span class="eyebrow">AVVISI CNC</span><h3>Notifiche ad app chiusa</h3><p>Collega il servizio notifiche e abilita ogni dispositivo su cui vuoi ricevere gli avvisi. Su iPhone usa l’app aggiunta alla schermata Home, con iOS 16.4 o successivo.</p></div>
+                <details><summary>Collega il servizio notifiche</summary>
+                  <label class="field-label">Indirizzo del servizio<input id="bf105PushURL" type="url" placeholder="https://notifiche.tuodominio.it" autocomplete="off" /></label>
+                  <label class="field-label">Codice di collegamento<input id="bf105PushToken" type="password" autocomplete="off" /></label>
+                  <p class="bf-help">Questi dati sono forniti durante l’attivazione del servizio. Il codice resta su questo dispositivo e non viene incluso nei backup.</p>
+                  <button class="btn secondary" type="button" data-push-action="save">Collega servizio</button>
+                </details>
+                <div class="settings-actions bf105-actions"><button class="btn primary" type="button" data-push-action="enable">Abilita su questo dispositivo</button><button class="btn secondary" type="button" data-push-action="test">Invia prova</button><button class="btn subtle" type="button" data-push-action="retry">Aggiorna scadenze</button><button class="btn subtle" type="button" data-push-action="disconnect">Scollega dispositivo</button></div>
+                <p id="bf105PushStatus" class="settings-note" role="status"></p>
+                <small class="settings-note">Il servizio deve essere online. Prima di chiudere, verifica che la scadenza sia stata inviata. Se modifichi o annulli offline, il precedente avviso può ancora arrivare. La notifica ricorda di controllare la macchina e non ne rileva l’arresto effettivo.</small>
+              </article>
               <article class="panel settings-card technical-settings">
                 <div class="settings-icon">
                   <svg><use href="#i-settings" /></svg>
@@ -912,6 +936,15 @@
     <input id="hiddenFileInput" class="hidden" type="file" multiple />
     <div id="toast" class="toast hidden" role="status"></div>
 
+    <dialog id="bf105RestoreDialog" class="bf105-dialog" aria-labelledby="bf105RestoreTitle">
+      <h2 id="bf105RestoreTitle">Recupera dati dal backup</h2>
+      <p>Gli elementi assenti dal backup restano nel gestionale. I file effettivi restano su Drive.</p>
+      <label class="bf105-check"><input id="bf105RestoreOverwrite" type="checkbox" /> Ripristina anche gli elementi con lo stesso identificativo, sostituendo le modifiche attuali.</label>
+      <div id="bf105RestorePreview"></div>
+      <p class="bf-help">Vengono recuperati i registri ore conclusi. Cronometri e conti alla rovescia del backup non ripartono. Le impostazioni aziendali e l’account attuali restano invariati. Una copia dei dati precedenti verrà conservata sul dispositivo.</p>
+      <p id="bf105RestoreError" class="bf105-error" role="alert"></p>
+      <div class="bf105-actions"><button class="btn secondary" type="button" data-restore-close>Annulla</button><button class="btn primary" type="button" id="bf105RestoreConfirm">Conferma recupero sul dispositivo</button></div>
+    </dialog>
     <script src="./drive.js?v=95"></script>
     <script src="./qr-engine.js?v=75"></script>
     <script src="./vendor/fflate-0.8.2.js"></script>
@@ -919,9 +952,12 @@
     <script src="./fusion-stock.js?v=90"></script>
     <script src="./repeat-jobs.js?v=104"></script>
     <script src="./production-v101.js?v=104"></script>
-    <script src="./app.js?v=104"></script>
-    <script src="./countdown-v102.js?v=104"></script>
-    <script src="./backup.js?v=78"></script>
+    <script src="./app.js?v=105"></script>
+    <script src="./machines-v105.js?v=105"></script>
+    <script src="./countdown-v102.js?v=105"></script>
+    <script src="./push-v105.js?v=105"></script>
+    <script src="./backup-core-v105.js?v=105"></script>
+    <script src="./backup.js?v=105"></script>
     <script src="./stats.js?v=104"></script>
     <script src="./mobile-nav.js?v=94"></script>
     <script src="./job-tabs.js?v=94"></script>

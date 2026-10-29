@@ -1,5 +1,9 @@
-const CACHE = "badfish-manager-v104";
+const CACHE = "badfish-manager-v105";
 const SHELL = [
+  "./features-v105.css?v=105",
+  "./machines-v105.js?v=105",
+  "./push-v105.js?v=105",
+  "./backup-core-v105.js?v=105",
   "./corrections-v104.css?v=104",
   "./cnc-v103.css?v=104",
   "./",
@@ -8,7 +12,7 @@ const SHELL = [
   "./manifest.webmanifest?v=91",
   "./assets/favicon-32.png?v=91",
   "./assets/apple-touch-icon.png?v=91",
-  "./config.js?v=62",
+  "./config.js?v=105",
   "./styles.css?v=92",
   "./atelier-v93.css?v=93",
   "./mobile-v94.css?v=94",
@@ -26,9 +30,9 @@ const SHELL = [
   "./fusion-stock.js?v=90",
   "./production-v101.js?v=104",
   "./production-v101.css?v=104",
-  "./app.js?v=104",
-  "./countdown-v102.js?v=104",
-  "./backup.js?v=78",
+  "./app.js?v=105",
+  "./countdown-v102.js?v=105",
+  "./backup.js?v=105",
   "./stats.js?v=104",
   "./mobile-nav.js?v=94",
   "./job-tabs.js?v=94",
@@ -84,4 +88,30 @@ self.addEventListener("fetch", (event) => {
           new Response("Offline", { status: 503 }),
       ),
   );
+});
+
+// Gli avvisi sono inviati dal server anche quando la pagina è chiusa.
+self.addEventListener('push', event => {
+  let data = {}; try { data = event.data?.json() || {}; } catch {}
+  const scope = new URL(self.registration.scope);
+  let target = scope.href;
+  try { const url = new URL(data.url, scope); if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) target = url.href; } catch {}
+  event.waitUntil(self.registration.showNotification(String(data.title || 'Badfish · Avviso CNC').slice(0,100), {
+    body: String(data.body || 'Controlla le lavorazioni in corso.').slice(0,500),
+    icon: new URL('assets/icon-192.png', scope).href,
+    badge: new URL('assets/icon-192.png', scope).href,
+    tag: String(data.tag || 'badfish-cnc').slice(0,300),
+    data: {url:target}
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const scope = new URL(self.registration.scope);
+  let url = scope.href;
+  try {const candidate = new URL(event.notification.data?.url,scope); if(candidate.origin===scope.origin && candidate.pathname.startsWith(scope.pathname))url=candidate.href;} catch {}
+  event.waitUntil((async()=>{
+    const pages=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const page of pages)if(page.url.startsWith(scope.href) && 'focus' in page){ await page.navigate(url);return page.focus(); }
+    return self.clients.openWindow(url);
+  })());
 });

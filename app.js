@@ -127,6 +127,7 @@ function defaultDb() {
     },
     jobs: [],
     deletedJobs: [],
+    machines: [],
     tasks: [],
     notes: [],
     clients: [],
@@ -150,6 +151,7 @@ function normalizeDb(value) {
           files: Array.isArray(j.files) ? j.files : [],
         }))
       : [],
+    machines: Array.isArray(value?.machines) ? value.machines : [],
     deletedJobs: Array.isArray(value?.deletedJobs) ? value.deletedJobs : [],
     tasks: Array.isArray(value?.tasks) ? value.tasks : [],
     notes: Array.isArray(value?.notes) ? value.notes : [],
@@ -209,7 +211,8 @@ function mergeDb(a, b) {
   const tasks = mergedItems(a.tasks, b.tasks),
     notes = mergedItems(a.notes, b.notes),
     clients = mergedItems(a.clients, b.clients),
-    quotes = mergedItems(a.quotes, b.quotes);
+    quotes = mergedItems(a.quotes, b.quotes),
+    machines = mergedItems(a.machines, b.machines);
   const settings =
     dateMs(a.meta.updatedAt) >= dateMs(b.meta.updatedAt)
       ? a.settings
@@ -220,6 +223,7 @@ function mergeDb(a, b) {
     notes,
     clients,
     quotes,
+    machines,
     jobs: [...jobs.values()].sort(
       (x, y) =>
         dateMs(y.updatedAt || y.createdAt) - dateMs(x.updatedAt || x.createdAt),
@@ -448,6 +452,7 @@ function render() {
   bfRenderNotes();
   bfRenderClients();
   bfRenderQuotes();
+  window.BadfishMachines?.render();
 }
 
 function bf99RenderDeliveries() {
@@ -746,6 +751,7 @@ async function syncDrivePass() {
     const remote = normalizeDb(rawRemote);
     const remoteFingerprint = JSON.stringify(rawRemote);
     db = mergeDb(db, remote);
+    window.BadfishPush?.queue();
     const preferred = getPreferredGoogleEmail();
     if (preferred && isGoogleEmailRemembered()) {
       db.settings.googleAccountEmail = preferred;
@@ -808,6 +814,7 @@ async function syncDrivePass() {
 }
 async function saveAndSync(message = "Salvato.") {
   persistLocal();
+  window.BadfishPush?.queue();
   if (syncPromise || (BadfishDrive.isConnected() && navigator.onLine)) {
     try {
       await syncDrive(false);

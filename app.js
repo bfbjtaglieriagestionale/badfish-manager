@@ -37,7 +37,7 @@ function bfStockPanel(j) {
   const files = (j.files || []).filter((f) => /\.f3d$/i.test(f.name || ""));
   const fmt = (n) =>
     Number(n).toLocaleString("it-IT", { maximumFractionDigits: 6 });
-  return `<section class="detail-section bf-nc-panel"><div class="bf-section-title"><h4>Grezzi dei singoli pezzi</h4><span class="bf-tag">DA FUSION</span></div><p class="bf-help">Legge le dimensioni del grezzo salvate nel setup Fusion. Aggiungi una scheda per ogni grezzo diverso.</p><button class="btn primary" id="bfAddRawPiece">+ Aggiungi pezzo</button><div class="bf-piece-list">${
+  return `<section class="detail-section bf-nc-panel"><div class="bf-section-title"><h4>Grezzi dei singoli pezzi</h4><span class="bf-tag">DA FUSION</span></div><p class="bf-help">Legge le dimensioni del grezzo salvate nel setup Fusion. Aggiungi una scheda per ogni grezzo diverso.</p><button class="btn primary" id="bfAddRawPiece">+ Aggiungi pezzo</button><button type="button" class="btn secondary" id="bfPrintRawPieces">Stampa / PDF grezzi</button><div class="bf-piece-list">${
     pieces
       .map((r, i) => {
         const stock = r.stock?.sourceType === "fusion-stock" ? r.stock : null;

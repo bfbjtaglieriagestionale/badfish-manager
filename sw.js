@@ -1,5 +1,6 @@
-const CACHE = "badfish-manager-v105";
+const CACHE = "badfish-manager-v106";
 const SHELL = [
+  "./raw-pieces-pdf-v106.js?v=106",
   "./features-v105.css?v=105",
   "./machines-v105.js?v=105",
   "./push-v105.js?v=105",
@@ -30,7 +31,7 @@ const SHELL = [
   "./fusion-stock.js?v=90",
   "./production-v101.js?v=104",
   "./production-v101.css?v=104",
-  "./app.js?v=105",
+  "./app.js?v=106",
   "./countdown-v102.js?v=105",
   "./backup.js?v=105",
   "./stats.js?v=104",

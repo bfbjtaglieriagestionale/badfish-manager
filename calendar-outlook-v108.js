@@ -1,11 +1,13 @@
 (() => {
   "use strict";
-  const EMAIL = "bfbjtaglieria.gestionale@gmail.com";
+  const EMAIL = "bfbjtaglieriapietre@gmail.com";
+  const LOGIN_EMAIL = "bfbjtaglieria.gestionale@gmail.com";
   const SCOPES = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email";
-  const API = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+  const API = "https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(EMAIL) + "/events";
   const KEY = "badfish_calendar_v109_links:" + EMAIL;
+  let lastStatus = "Calendario non collegato.";
   let accessToken = "", expiresAt = 0, queue = Promise.resolve(), connected = false;
-  const status = message => { const el = document.getElementById("bfCalStatus"); if (el) el.textContent = message; };
+  const status = message => { lastStatus = message; const el = document.getElementById("bfCalStatus"); if (el) el.textContent = message; };
   const clientId = () => (localStorage.getItem("badfish_google_client_id") || window.BADFISH_CONFIG?.googleClientId || "").trim();
   const links = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } };
   const saveLinks = map => localStorage.setItem(KEY, JSON.stringify(map));
@@ -33,7 +35,7 @@
     if (!window.google?.accounts?.oauth2) throw new Error("Accesso Google non disponibile. Ricarica la pagina online.");
     status("Autorizzazione Google in corso…");
     const auth = await new Promise((resolve,reject)=>{
-      const c=google.accounts.oauth2.initTokenClient({client_id:clientId(),scope:SCOPES,login_hint:EMAIL,
+      const c=google.accounts.oauth2.initTokenClient({client_id:clientId(),scope:SCOPES,login_hint:LOGIN_EMAIL,
         callback:res=>res.error?reject(new Error(res.error_description||res.error)):resolve(res),
         error_callback:err=>reject(new Error(err.message||"Accesso annullato"))});
       c.requestAccessToken({prompt:"consent"});
@@ -41,8 +43,10 @@
     accessToken=auth.access_token; expiresAt=Date.now()+Number(auth.expires_in||3600)*1000;
     try {
       const profile=await api("https://www.googleapis.com/oauth2/v3/userinfo");
-      if ((profile.email||"").toLowerCase()!==EMAIL) throw new Error("Account errato: autorizza "+EMAIL);
+      if (![EMAIL, LOGIN_EMAIL].includes((profile.email||"").toLowerCase())) throw new Error("Account errato: autorizza "+LOGIN_EMAIL+" oppure "+EMAIL);
     } catch(err) { accessToken="";connected=false;throw err; }
+    try { await api(API + "?maxResults=1"); }
+    catch (err) { accessToken=""; connected=false; throw new Error("Calendario " + EMAIL + " non accessibile. Condividilo con " + LOGIN_EMAIL + " con il permesso di modificare gli eventi, oppure collega direttamente " + EMAIL + ". " + err.message); }
     connected=true;
     status("Collegato a "+EMAIL+". Sincronizzazione automatica attiva mentre Badfish è aperto.");
     await sync();
@@ -86,5 +90,5 @@
     if (event.target.closest("#bfCalConnect")) { try { await connect(); } catch(err) {status("Errore: "+err.message);} }
     if (event.target.closest("#bfCalSync")) { if(!connected)status("Prima collega Google Calendar.");else try{await sync();}catch{} }
   });
-  window.BadfishCalendarSync={onSave:()=>{if(connected)sync().catch(()=>{});},isConnected:()=>connected};
+  window.BadfishCalendarSync={onSave:()=>{if(connected)sync().catch(()=>{});},renderStatus:()=>status(lastStatus),isConnected:()=>connected};
 })();

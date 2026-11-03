@@ -978,6 +978,7 @@ function bfRenderPlanner() {
   const root = $("#bfPlanner");
   if (!root) return;
   const items = (db.tasks || []).filter((t) => !t.deleted);
+  const deliveries = (db.jobs || []).filter(j => !j.deleted && j.dueDate && j.status !== "Consegnata");
   const [year, month] = bfPlannerMonth.split("-").map(Number);
   const start = new Date(year, month - 1, 1),
     days = new Date(year, month, 0).getDate();
@@ -989,11 +990,11 @@ function bfRenderPlanner() {
     ...Array.from({ length: offset }, () => "<span></span>"),
     ...Array.from({ length: days }, (_, i) => {
       const d = `${bfPlannerMonth}-${String(i + 1).padStart(2, "0")}`,
-        n = items.filter((t) => t.date === d && !t.done).length;
+        n = items.filter((t) => t.date === d && !t.done).length + deliveries.filter(j => j.dueDate === d).length;
       return `<button class="bf-day ${d === today ? "today" : ""} ${n ? "has-tasks" : ""}" data-bf-date="${d}" aria-label="${i + 1} ${new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(start)}, ${n} attività da fare"><strong>${i + 1}</strong>${n ? `<small><span class="bf-day-count">${n}</span><span class="bf-day-label"> attività</span></small>` : ""}</button>`;
     }),
   ].join("");
-  root.innerHTML = `<article class="panel" style="margin-bottom:18px"><h3>Consegne su Outlook</h3><p class="bf-help">Collega il calendario Google di bfbjtaglieria.gestionale@gmail.com. Le consegne e le attività verranno sincronizzate automaticamente mentre il gestionale è aperto e collegato. Il calendario Google deve essere visibile anche in Outlook.</p><div class="bf-button-group"><button type="button" class="btn secondary" id="bfCalConnect">Collega Google Calendar</button><button type="button" class="btn primary" id="bfCalSync">Sincronizza ora</button></div><p class="bf-help" role="status" id="bfCalStatus">Calendario non collegato.</p></article><div class="bf-planner-layout"><article class="panel bf-planner-calendar"><div class="bf-heading-row"><div><span class="eyebrow">PIANIFICAZIONE</span><h3>${new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(start)}</h3></div><div class="bf-button-group"><button class="btn subtle" data-bf-month="-1" aria-label="Mese precedente">←</button><button class="btn subtle" data-bf-month="1" aria-label="Mese successivo">→</button></div></div><div class="bf-cal-grid">${grid}</div></article><article class="panel bf-form-card"><h3>Nuova attività</h3><p class="bf-help">Una scadenza o un promemoria, anche senza commessa.</p><form id="bfTaskForm" class="bf-inline-form"><label>Attività<input name="title" required maxlength="180" placeholder="Es. Preparare grezzo in quarzo"></label><label>Data<input name="date" type="date" value="${today}"></label><label>Commessa (facoltativa)<select name="jobId"><option value="">Attività generale</option>${db.jobs.map((j) => `<option value="${esc(j.id)}">${esc(j.code)} · ${esc(j.article)}</option>`).join("")}</select></label><label>Dettagli<textarea name="description" rows="2" placeholder="Informazioni utili..."></textarea></label><button class="btn primary" type="submit">+ Aggiungi attività</button></form></article></div><article class="panel bf-list-panel"><div class="bf-heading-row"><h3>Le tue attività</h3><span class="bf-muted">${items.filter((t) => !t.done).length} da fare</span></div><div class="bf-task-items">${
+  root.innerHTML = `<article class="panel" style="margin-bottom:18px"><h3>Consegne su Outlook</h3><p class="bf-help">Destinazione: calendario Google di bfbjtaglieriapietre@gmail.com, da visualizzare in Outlook. Alla creazione di una commessa con data di consegna, questa compare automaticamente qui. Collega Google Calendar per sincronizzarla. Le consegne e le attività verranno sincronizzate automaticamente mentre il gestionale è aperto e collegato. Il calendario Google deve essere visibile anche in Outlook.</p><div class="bf-button-group"><button type="button" class="btn secondary" id="bfCalConnect">Collega Google Calendar</button><button type="button" class="btn primary" id="bfCalSync">Sincronizza ora</button></div><p class="bf-help" role="status" id="bfCalStatus">Calendario non collegato.</p></article><div class="bf-planner-layout"><article class="panel bf-planner-calendar"><div class="bf-heading-row"><div><span class="eyebrow">PIANIFICAZIONE</span><h3>${new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(start)}</h3></div><div class="bf-button-group"><button class="btn subtle" data-bf-month="-1" aria-label="Mese precedente">←</button><button class="btn subtle" data-bf-month="1" aria-label="Mese successivo">→</button></div></div><div class="bf-cal-grid">${grid}</div></article><article class="panel bf-form-card"><h3>Nuova attività</h3><p class="bf-help">Una scadenza o un promemoria, anche senza commessa.</p><form id="bfTaskForm" class="bf-inline-form"><label>Attività<input name="title" required maxlength="180" placeholder="Es. Preparare grezzo in quarzo"></label><label>Data<input name="date" type="date" value="${today}"></label><label>Commessa (facoltativa)<select name="jobId"><option value="">Attività generale</option>${db.jobs.map((j) => `<option value="${esc(j.id)}">${esc(j.code)} · ${esc(j.article)}</option>`).join("")}</select></label><label>Dettagli<textarea name="description" rows="2" placeholder="Informazioni utili..."></textarea></label><button class="btn primary" type="submit">+ Aggiungi attività</button></form></article></div><article class="panel bf-list-panel"><div class="bf-heading-row"><h3>Consegne e attività</h3><span class="bf-muted">${items.filter((t) => !t.done).length} da fare</span></div><div class="bf-task-items">${
     items
       .sort(
         (a, b) =>
@@ -1005,7 +1006,8 @@ function bfRenderPlanner() {
       )
       .join("") ||
     '<p class="empty">Nessuna attività. Aggiungine una usando il modulo.</p>'
-  }</div></article>`;
+  }${deliveries.sort((a,b) => a.dueDate.localeCompare(b.dueDate)).map(j => `<button type="button" class="bf-home-task" data-open="${esc(j.id)}"><span><strong>Consegna · ${esc(j.code)} · ${esc(j.article)}</strong><small>${esc(j.client)}</small></span><small>${formatDate(j.dueDate)}</small></button>`).join("")}</div></article>`;
+  window.BadfishCalendarSync?.renderStatus();
 }
 function bfRenderNotes() {
   const root = $("#bfNotes");

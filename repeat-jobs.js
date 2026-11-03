@@ -1,11 +1,26 @@
-/* v95 · Nuove lavorazioni da una commessa esistente.
-   Ogni file riceve un nuovo identificativo; gli originali non vengono riutilizzati come copie. */
+/* v110 · Ripeti dati e grezzi senza duplicare allegati su Drive. */
 (() => {
   "use strict";
   let sourceId = "";
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const uid = (kind) => `${kind}_${window.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(16).slice(2)}`}`;
-  const pending = (job) => (job.files || []).filter((file) => file.repeatCopyFromDriveId && !file.driveFileId);
+  const pending = () => [];
+  function cancelPending(job) {
+    if (!job.repeatedFrom) return false;
+    const removed = new Set((job.files || []).filter(file => file.repeatCopyFromDriveId && !file.driveFileId).map(file => file.id));
+    if (!removed.size) return false;
+    job.files = (job.files || []).filter(file => !removed.has(file.id));
+    const clean = value => {
+      if (!value || typeof value !== "object") return;
+      for (const key of Object.keys(value)) {
+        if ((key === "fileId" || key === "fusionFileId") && removed.has(value[key])) value[key] = key === "fileId" ? null : "";
+        else clean(value[key]);
+      }
+    };
+    clean(job.rawPieces);
+    job.updatedAt = now();
+    return true;
+  }
 
   function resetForm() {
     sourceId = "";
@@ -39,30 +54,19 @@
     form.querySelector('[type="submit"]').textContent = "Crea nuova lavorazione";
     const info = document.getElementById("bf95RepeatInfo");
     info.hidden = false;
-    info.textContent = `Da ${source.code}: ${source.files?.length || 0} file e ${source.rawPieces?.length || 0} grezzi. Indicazioni recuperate; ore e cronometro ripartono da zero. I file saranno copiati nella nuova commessa alla sincronizzazione con Drive.`;
+    info.textContent = `Da ${source.code}: ${source.rawPieces?.length || 0} grezzi e indicazioni recuperati. Nessun allegato viene copiato. Le ore ripartono da zero; il tempo CNC precedente resta come riferimento per il countdown.`;
   }
   function build(job) {
     if (!sourceId) return job;
     const source = db.jobs.find((entry) => entry.id === sourceId);
     if (!source) throw new Error("La commessa di partenza è stata rimossa. Riapri la lavorazione da ripetere.");
-    const fileIds = new Map();
-    job.files = (source.files || []).map((file) => {
-      const from = file.driveFileId || file.repeatCopyFromDriveId;
-      if (!from) throw new Error(`Il file “${file.name}” non ha un collegamento Drive valido. Ricollegalo nella commessa originale prima di ripetere il lavoro.`);
-      if (!Object.hasOwn(CATEGORY_LABELS, file.category)) throw new Error(`Categoria non riconosciuta per “${file.name}”.`);
-      const id = uid("file");
-      fileIds.set(file.id, id);
-      return {
-        id, name: file.name, category: file.category, size: Number(file.size || 0),
-        mimeType: file.mimeType || "", addedAt: now(), repeatCopyFromDriveId: from,
-      };
-    });
+    job.files = [];
     // Remap both the selected Fusion file and every saved setup/stock reference.
     const remap = (value) => {
       if (!value || typeof value !== "object") return;
       for (const key of Object.keys(value)) {
-        if (key === "fusionFileId") value[key] = fileIds.get(value[key]) || "";
-        else if (key === "fileId") value[key] = fileIds.get(value[key]) || null;
+        if (key === "fusionFileId") value[key] = "";
+        else if (key === "fileId") value[key] = null;
         else if (key === "driveFileId") delete value[key];
         else remap(value[key]);
       }
@@ -78,65 +82,13 @@
     return job;
   }
   function panel(job) {
-    const count = pending(job).length;
-    return `<div class="bf95-repeat-actions"><button type="button" class="btn secondary" data-repeat-job="${esc(job.id)}">${icon("refresh")} Ripeti lavorazione</button>${job.repeatedFrom ? `<small>Ripetizione di <b>${esc(job.repeatedFrom.code)}</b></small>` : ""}</div>${count ? `<div class="bf95-repeat-notice" role="status"><div><strong>${count} file da copiare</strong><p>Le copie indipendenti verranno create su Drive alla sincronizzazione. Gli originali restano nella lavorazione precedente.</p></div><button type="button" id="bf95CompleteRepeat" class="btn secondary">Completa copia file</button></div>` : ""}`;
+    return `<div class="bf95-repeat-actions"><button type="button" class="btn secondary" data-repeat-job="${esc(job.id)}">${icon("refresh")} Ripeti lavorazione</button>${job.repeatedFrom ? `<small>Ripetizione di <b>${esc(job.repeatedFrom.code)}</b></small>` : ""}</div>`;
   }
-  function updateStockReferences(value, fileId, driveId) {
-    if (!value || typeof value !== "object") return;
-    if (value.fileId === fileId) value.driveFileId = driveId;
-    for (const child of Object.values(value)) if (child && typeof child === "object") updateStockReferences(child, fileId, driveId);
-  }
-  function refreshProgress(job, file) {
-    if (selectedJobId !== job.id) return;
-    const root = document.getElementById("detailContent");
-    const notice = root.querySelector(".bf95-repeat-notice");
-    const count = pending(job).length;
-    if (!count) notice?.remove();
-    else if (notice) notice.querySelector("strong").textContent = `${count} file da copiare`;
-    const remove = [...root.querySelectorAll("[data-file-remove]")].find((button) => button.dataset.fileRemove === file.id);
-    const actions = remove?.closest(".file-actions");
-    if (actions) actions.innerHTML = fileButtons(file);
-  }
-  async function copyPending(job, folders) {
-    for (const file of pending(job)) {
-      if (!db.jobs.includes(job) || !job.files.includes(file)) continue;
-      setSyncState("syncing", `Copia file · ${job.code}`, file.name);
-      let copied;
-      try {
-        copied = await BadfishDrive.copyJobFile(file, folders);
-        if (!copied?.id || copied.id === file.repeatCopyFromDriveId) throw new Error("La copia non ha restituito un nuovo file valido.");
-      } catch (error) {
-        throw new Error(`Copia di “${file.name}” non completata: ${error.message}. I file ancora in attesa verranno ripresi alla prossima sincronizzazione.`);
-      }
-      if (!db.jobs.includes(job) || !job.files.includes(file)) continue;
-      file.driveFileId = copied.id;
-      file.name = copied.name || file.name;
-      file.size = Number(copied.size || file.size || 0);
-      file.mimeType = copied.mimeType || file.mimeType || "";
-      delete file.repeatCopyFromDriveId;
-      updateStockReferences(job.rawPieces, file.id, copied.id);
-      job.updatedAt = now();
-      persistLocal({ renderNow: false });
-      refreshProgress(job, file);
-    }
-  }
+  async function copyPending() {}
   document.addEventListener("click", async (event) => {
     const repeat = event.target.closest("[data-repeat-job]");
     if (repeat) { open(repeat.dataset.repeatJob); return; }
-    const finish = event.target.closest("#bf95CompleteRepeat");
-    if (!finish) return;
-    if (syncing) return toast("Sincronizzazione già in corso. Attendi il completamento.");
-    if (!navigator.onLine) return toast("Sei offline. Collega Drive quando torni online per completare la copia dei file.", true);
-    const id = selectedJobId;
-    finish.disabled = true;
-    try {
-      await ensureConnected();
-      await syncDrive(true);
-    } catch (error) { toast(error.message, true); }
-    finally {
-      if (selectedJobId === id && db.jobs.some((job) => job.id === id)) openDetail(id);
-      else if (finish.isConnected) finish.disabled = false;
-    }
+
   });
-  window.BadfishRepeats = { resetForm, build, panel, pending, copyPending };
+  window.BadfishRepeats = { resetForm, build, panel, pending, copyPending, cancelPending };
 })();

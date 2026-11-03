@@ -1,9 +1,9 @@
 (() => {
   "use strict";
-  const EMAIL = "bfbjtaglieriapietre@gmail.com";
+  const EMAIL = "bfbjtaglieria.gestionale@gmail.com";
   const SCOPES = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email";
   const API = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
-  const KEY = "badfish_calendar_v108_links";
+  const KEY = "badfish_calendar_v109_links:" + EMAIL;
   let accessToken = "", expiresAt = 0, queue = Promise.resolve(), connected = false;
   const status = message => { const el = document.getElementById("bfCalStatus"); if (el) el.textContent = message; };
   const clientId = () => (localStorage.getItem("badfish_google_client_id") || window.BADFISH_CONFIG?.googleClientId || "").trim();
